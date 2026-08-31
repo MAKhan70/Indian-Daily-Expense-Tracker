@@ -27,10 +27,10 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Run regression tests
-        run: npm test
       - name: Build production PWA
         run: npm run build
+      - name: Run regression tests
+        run: npm test
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload Pages artifact
