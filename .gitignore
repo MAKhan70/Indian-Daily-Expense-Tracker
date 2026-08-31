@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+Thumbs.db
+design/
+design-qa.md
+pocket-ledger-pwa-static.zip
