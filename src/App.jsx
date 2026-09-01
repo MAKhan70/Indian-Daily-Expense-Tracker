@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowsClockwise, Bank, CalendarBlank, CaretLeft, CaretRight, ChartBar, ChartDonut,
-  Check, CreditCard, DownloadSimple, GearSix, HandCoins, House, MagnifyingGlass,
-  List, Moon, PencilSimple, Plus, Receipt, ShoppingBag, Tag, Trash,
-  TrendDown, Wallet, X,
+  Camera, Check, CreditCard, DownloadSimple, GearSix, HandCoins, House, MagnifyingGlass,
+  List, Moon, PencilSimple, Plus, Receipt, ShoppingBag, Sun, Tag, Trash,
+  TrendDown, UserCircle, Wallet, X,
 } from "@phosphor-icons/react";
 import {
   Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart,
@@ -16,7 +16,7 @@ import "@fontsource/playfair-display/600.css";
 import {
   buildAliases, CATEGORY_GROUPS, CATEGORY_LIBRARY, categoryGroupFor, createDefaultState, deleteExpenseWithArchive, DISPLAY_DATE, DISPLAY_MONTH,
   expensesForMonth, formatINR, FREQUENCIES, getBudgetForMonth, isAdvancePayment, isBudgetExpense, isCreditBorrow,
-  isDisplayMonth, loadState, monthLabel, PAYMENT_GROUPS, shiftMonthKey, STORAGE_KEY, titleCaseDate,
+  isDisplayMonth, ledgerUsageForMonth, loadState, monthLabel, PAYMENT_GROUPS, shiftMonthKey, STORAGE_KEY, titleCaseDate,
   upsertExpenseWithArchive, withBudgetForMonth,
 } from "./domain.js";
 import { LedgerView } from "./LedgerView.jsx";
@@ -71,20 +71,41 @@ function CurrencyTooltip({ active, payload, label }) {
   return <div className="chart-tooltip"><strong>{label}</strong>{payload.map((item) => <span key={item.dataKey}>{item.name}: {formatINR(item.value)}</span>)}</div>;
 }
 
-function Sidebar({ active, onNavigate, dark, onToggleDark, budgetSpent, monthlyBudget }) {
+async function prepareProfilePhoto(file) {
+  if (!file?.type?.startsWith("image/")) throw new Error("Choose a JPG, PNG or WebP image.");
+  if (file.size > 8 * 1024 * 1024) throw new Error("Choose an image smaller than 8 MB.");
+  const bitmap = await createImageBitmap(file);
+  const size = Math.min(bitmap.width, bitmap.height);
+  const canvas = document.createElement("canvas");
+  canvas.width = 320;
+  canvas.height = 320;
+  const context = canvas.getContext("2d");
+  context.fillStyle = "#fffaf5";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(bitmap, (bitmap.width - size) / 2, (bitmap.height - size) / 2, size, size, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  return canvas.toDataURL("image/jpeg", 0.82);
+}
+
+function ProfilePhotoControl({ photo, onFile, id, compact = false }) {
+  return <label className={compact ? "profile-photo-control compact" : "profile-photo-control"} htmlFor={id}><input className="visually-hidden" id={id} name={id} type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) onFile(file); event.target.value = ""; }} /><span className="profile-avatar">{photo ? <img src={photo} alt="Ananya profile" width="52" height="52" /> : <UserCircle size={31} weight="duotone" />}</span><span className="profile-copy"><strong>Ananya</strong><small>{photo ? "Change profile picture" : "Add profile picture"}</small></span><Camera className="profile-camera" size={18} weight="duotone" aria-hidden="true" /></label>;
+}
+
+function Sidebar({ active, onNavigate, dark, onToggleDark, budgetSpent, monthlyBudget, profilePhoto, onProfilePhoto }) {
   const percent = monthlyBudget > 0 ? Math.round((budgetSpent / monthlyBudget) * 100) : 0;
   return (
     <aside className="sidebar" aria-label="Primary navigation">
       <div className="brand-block"><span className="brand-mark" aria-hidden="true"><Wallet weight="fill" /></span><div><strong>Pocket Ledger</strong><span>Daily Expense Tracker</span></div></div>
+      <ProfilePhotoControl photo={profilePhoto} onFile={onProfilePhoto} id="desktop-profile-photo" compact />
       <nav className="sidebar-nav">{NAV_ITEMS.map((item) => { const Icon = item.icon; return <button className={active === item.id ? "nav-item active" : "nav-item"} key={item.id} onClick={() => onNavigate(item.id)} aria-current={active === item.id ? "page" : undefined}><Icon size={21} weight={active === item.id ? "fill" : "regular"} /><span>{item.label}</span></button>; })}</nav>
       <div className="sidebar-foot"><div className="month-note"><span>{monthLabel(DISPLAY_MONTH)} budget</span><strong>{formatINR(budgetSpent)} spent</strong><small><TrendDown size={14} /> {percent}% of {formatINR(monthlyBudget)}</small></div><button className="theme-toggle" onClick={onToggleDark} aria-pressed={dark}><Moon size={19} /><span>Dark mode</span><i aria-hidden="true" /></button></div>
     </aside>
   );
 }
 
-function MobileNav({ active, onNavigate, onAdd }) {
+function MobileNav({ active, onNavigate }) {
   const items = NAV_ITEMS.slice(0, 4);
-  return <nav className="mobile-nav" aria-label="Mobile navigation">{items.map((item) => { const Icon = item.icon; return <button key={item.id} className={active === item.id ? "active" : ""} onClick={() => onNavigate(item.id)}><Icon size={21} weight={active === item.id ? "fill" : "regular"} /><span>{item.label.replace(" & Ledgers", "")}</span></button>; })}<button className="mobile-add" onClick={onAdd} aria-label="Add expense"><Plus size={24} weight="bold" /></button></nav>;
+  return <nav className="mobile-nav" aria-label="Mobile navigation">{items.map((item) => { const Icon = item.icon; return <button key={item.id} className={active === item.id ? "active" : ""} onClick={() => onNavigate(item.id)}><Icon size={21} weight={active === item.id ? "fill" : "regular"} /><span>{item.label.replace(" & Ledgers", "")}</span></button>; })}</nav>;
 }
 
 function Header({ active, onAdd, onToggleMenu, menuOpen }) {
@@ -92,28 +113,26 @@ function Header({ active, onAdd, onToggleMenu, menuOpen }) {
   return <header className="page-header"><button id="mobile-menu-trigger" className="mobile-menu" onClick={onToggleMenu} aria-label="Open navigation menu" aria-expanded={menuOpen} aria-controls="mobile-navigation-drawer"><List size={23} weight="bold" /></button><div><p>{titleCaseDate(DISPLAY_DATE)}</p><h1>{active === "dashboard" ? "Good morning, Ananya" : label}</h1><span>{active === "dashboard" ? "A clear view of today, this month, and what comes next." : "Keep every rupee clear and accounted for."}</span></div><button className="primary-button header-add" onClick={onAdd}><Plus size={19} weight="bold" /> Log expense</button></header>;
 }
 
-function MobileMenuDrawer({ active, onNavigate, onClose }) {
+function MobileMenuDrawer({ active, onNavigate, onClose, dark, onToggleDark, profilePhoto, onProfilePhoto }) {
   useEffect(() => {
     const closeOnEscape = (event) => event.key === "Escape" && onClose();
     document.addEventListener("keydown", closeOnEscape);
     document.body.classList.add("menu-open");
     return () => { document.removeEventListener("keydown", closeOnEscape); document.body.classList.remove("menu-open"); document.getElementById("mobile-menu-trigger")?.focus(); };
   }, [onClose]);
-  return <div className="mobile-menu-drawer" id="mobile-navigation-drawer" role="dialog" aria-modal="true" aria-label="Navigation menu"><button className="mobile-menu-backdrop" onClick={onClose} aria-label="Close navigation menu" /><aside className="mobile-menu-panel"><div className="mobile-menu-head"><div className="brand-block"><span className="brand-mark" aria-hidden="true"><Wallet weight="fill" /></span><div><strong>Pocket Ledger</strong><span>Daily Expense Tracker</span></div></div><button type="button" className="icon-button" onClick={onClose} aria-label="Close menu" autoFocus><X size={21} /></button></div><nav aria-label="Mobile navigation">{NAV_ITEMS.map((item) => { const Icon = item.icon; return <button className={active === item.id ? "active" : ""} key={item.id} onClick={() => onNavigate(item.id)} aria-current={active === item.id ? "page" : undefined}><Icon size={21} weight={active === item.id ? "fill" : "regular"} /><span>{item.label}</span></button>; })}</nav><p>Private by default · stored on this device</p></aside></div>;
+  return <div className="mobile-menu-drawer" id="mobile-navigation-drawer" role="dialog" aria-modal="true" aria-label="Navigation menu"><button className="mobile-menu-backdrop" onClick={onClose} aria-label="Close navigation menu" /><aside className="mobile-menu-panel"><div className="mobile-menu-head"><div className="brand-block"><span className="brand-mark" aria-hidden="true"><Wallet weight="fill" /></span><div><strong>Pocket Ledger</strong><span>Daily Expense Tracker</span></div></div><button type="button" className="icon-button" onClick={onClose} aria-label="Close menu" autoFocus><X size={21} /></button></div><ProfilePhotoControl photo={profilePhoto} onFile={onProfilePhoto} id="mobile-profile-photo" /><nav aria-label="Mobile navigation">{NAV_ITEMS.map((item) => { const Icon = item.icon; return <button className={active === item.id ? "active" : ""} key={item.id} onClick={() => onNavigate(item.id)} aria-current={active === item.id ? "page" : undefined}><Icon size={21} weight={active === item.id ? "fill" : "regular"} /><span>{item.label}</span></button>; })}</nav><button type="button" className="menu-theme-toggle" onClick={onToggleDark} aria-pressed={dark}>{dark ? <Sun size={20} /> : <Moon size={20} />}<span><strong>{dark ? "Light theme" : "Dark theme"}</strong><small>Change appearance now</small></span><i aria-hidden="true" /></button><p>Private by default · stored on this device</p></aside></div>;
 }
 
 function BudgetHero({ expenses, selectedMonth, onMonthChange, monthlyBudget, monthlyBudgets, advanceAccounts, creditAccounts }) {
   const monthExpenses = expensesForMonth(expenses, selectedMonth);
   const selectedBudget = getBudgetForMonth({ monthlyBudget, monthlyBudgets }, selectedMonth);
   const spent = monthExpenses.filter(isBudgetExpense).reduce((sum, expense) => sum + Number(expense.amount), 0);
-  const advanceUsed = monthExpenses.filter((expense) => isAdvancePayment(expense.payment)).reduce((sum, expense) => sum + Number(expense.amount), 0);
-  const creditUsed = monthExpenses.filter((expense) => isCreditBorrow(expense.payment)).reduce((sum, expense) => sum + Number(expense.amount), 0);
-  const advanceCapacity = advanceAccounts.reduce((sum, account) => sum + (Number(account.amountPaid) || 0), 0);
-  const creditCapacity = creditAccounts.reduce((sum, account) => sum + (Number(account.creditLimit) || 0), 0);
+  const advanceUsage = ledgerUsageForMonth(expenses, advanceAccounts, selectedMonth, "advance");
+  const creditUsage = ledgerUsageForMonth(expenses, creditAccounts, selectedMonth, "credit");
   const remaining = Math.max(selectedBudget - spent, 0);
   const used = selectedBudget > 0 ? Math.min((spent / selectedBudget) * 100, 100) : 0;
   const chart = [{ name: "Monthly budget", value: used, fill: spent > selectedBudget ? "#b65f5a" : "#52765b" }];
-  return <section className="budget-hero-card" aria-labelledby="safe-title"><div className="budget-hero-head"><div><span className="eyebrow">Monthly budget</span><h2 id="safe-title">{monthLabel(selectedMonth)}</h2></div><MonthNavigator value={selectedMonth} onChange={onMonthChange} label="Dashboard budget month" /></div><div className="budget-hero-body"><div className="budget-primary"><span>Available to spend</span><strong>{formatINR(remaining)}</strong><small>{Math.round(used)}% used · {formatINR(selectedBudget)} total budget</small><div className="budget-mini-stats"><span><small>Spent</small><b>{formatINR(spent)}</b></span><span><small>Remaining</small><b>{formatINR(remaining)}</b></span></div></div><div className="budget-ring" aria-label={`${Math.round(used)} percent of monthly budget used`}><ResponsiveContainer width="100%" height="100%"><RadialBarChart innerRadius="76%" outerRadius="100%" data={chart} startAngle={90} endAngle={-270} barSize={15}><PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} /><RadialBar dataKey="value" background={{ fill: "var(--track)" }} cornerRadius={12} isAnimationActive={false} /></RadialBarChart></ResponsiveContainer><span><b>{Math.round(used)}%</b><small>used</small></span></div></div><div className="budget-ledger-strip"><div><HandCoins size={18} /><span>Advance used<small>{formatINR(advanceUsed)} of {formatINR(advanceCapacity)}</small></span></div><div><CreditCard size={18} /><span>Credit used<small>{formatINR(creditUsed)} of {formatINR(creditCapacity)}</small></span></div></div></section>;
+  return <section className="budget-hero-card" aria-labelledby="safe-title"><div className="budget-hero-head"><div><span className="eyebrow">Monthly budget</span><h2 id="safe-title">{monthLabel(selectedMonth)}</h2></div><MonthNavigator value={selectedMonth} onChange={onMonthChange} label="Dashboard budget month" /></div><div className="budget-hero-body"><div className="budget-primary"><span>Available to spend</span><strong>{formatINR(remaining)}</strong><small>{Math.round(used)}% used · {formatINR(selectedBudget)} total budget</small><div className="budget-mini-stats"><span><small>Spent</small><b>{formatINR(spent)}</b></span><span><small>Remaining</small><b>{formatINR(remaining)}</b></span></div></div><div className="budget-ring" aria-label={`${Math.round(used)} percent of monthly budget used`}><ResponsiveContainer width="100%" height="100%"><RadialBarChart innerRadius="76%" outerRadius="100%" data={chart} startAngle={90} endAngle={-270} barSize={15}><PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} /><RadialBar dataKey="value" background={{ fill: "var(--track)" }} cornerRadius={12} isAnimationActive={false} /></RadialBarChart></ResponsiveContainer><span><b>{Math.round(used)}%</b><small>used</small></span></div></div><div className="budget-ledger-strip"><div><HandCoins size={18} /><span>Advance usage<b>{formatINR(advanceUsage.used)} used</b><small>{formatINR(advanceUsage.defined)} advance defined</small></span></div><div><CreditCard size={18} /><span>Credit usage<b>{formatINR(creditUsage.used)} used</b><small>{formatINR(creditUsage.defined)} credit limit defined</small></span></div></div></section>;
 }
 
 function SpendingMix({ expenses, frequency }) {
@@ -160,12 +179,9 @@ function BudgetView({ monthlyBudget, monthlyBudgets, expenses, advanceAccounts, 
   const [budgetDraft, setBudgetDraft] = useState(String(selectedBudget));
   const monthExpenses = expensesForMonth(expenses, selectedMonth);
   const budgetSpent = monthExpenses.filter(isBudgetExpense).reduce((sum, expense) => sum + Number(expense.amount), 0);
-  const advanceUsed = monthExpenses.filter((expense) => isAdvancePayment(expense.payment)).reduce((sum, expense) => sum + Number(expense.amount), 0);
-  const creditUsed = monthExpenses.filter((expense) => isCreditBorrow(expense.payment)).reduce((sum, expense) => sum + Number(expense.amount), 0);
-  const advanceCapacity = advanceAccounts.reduce((sum, account) => sum + (Number(account.amountPaid) || 0), 0);
-  const creditCapacity = creditAccounts.reduce((sum, account) => sum + (Number(account.creditLimit) || 0), 0);
+  const advanceUsage = ledgerUsageForMonth(expenses, advanceAccounts, selectedMonth, "advance");
+  const creditUsage = ledgerUsageForMonth(expenses, creditAccounts, selectedMonth, "credit");
   const percent = selectedBudget > 0 ? Math.min(Math.round((budgetSpent / selectedBudget) * 100), 100) : 0;
-  const lifetimeUsage = (id) => expenses.filter((expense) => expense.payment === id).reduce((sum, expense) => sum + Number(expense.amount), 0);
 
   useEffect(() => setBudgetDraft(String(selectedBudget)), [selectedBudget, selectedMonth]);
   const submitBudget = (event) => { event.preventDefault(); onBudgetChange(selectedMonth, Math.max(Number(budgetDraft) || 0, 0)); };
@@ -176,14 +192,14 @@ function BudgetView({ monthlyBudget, monthlyBudgets, expenses, advanceAccounts, 
       <div className="module-intro budget-progress-head"><div><p>Daily, Weekly, Monthly and One-off spending counts toward this budget. Advance and Credit usage is shown separately.</p></div><strong>{percent}%</strong></div>
       <progress max="100" value={percent} className="master-progress" aria-label={`${percent}% of ${monthLabel(selectedMonth)} budget used`} />
       <div className="budget-kpis"><div><span>Budget</span><strong>{formatINR(selectedBudget)}</strong></div><div><span>Budget spend</span><strong>{formatINR(budgetSpent)}</strong></div><div><span>Remaining</span><strong className="positive">{formatINR(Math.max(selectedBudget - budgetSpent, 0))}</strong></div></div>
-      {(advanceCapacity > 0 || advanceUsed > 0 || creditCapacity > 0 || creditUsed > 0) && <div className="special-usage-grid">
-        {(advanceCapacity > 0 || advanceUsed > 0) && <article className="special-usage advance"><span><HandCoins size={20} /> Advance usage</span><strong>{formatINR(advanceUsed)}</strong><small>used in {monthLabel(selectedMonth)} · {formatINR(advanceCapacity)} prepaid</small><progress max={Math.max(advanceCapacity, advanceUsed, 1)} value={advanceUsed} aria-label={`Advance usage ${formatINR(advanceUsed)} of ${formatINR(advanceCapacity)}`} /></article>}
-        {(creditCapacity > 0 || creditUsed > 0) && <article className="special-usage credit"><span><CreditCard size={20} /> Credit usage</span><strong>{formatINR(creditUsed)}</strong><small>borrowed in {monthLabel(selectedMonth)} · {formatINR(creditCapacity)} limit</small><progress max={Math.max(creditCapacity, creditUsed, 1)} value={creditUsed} aria-label={`Credit usage ${formatINR(creditUsed)} of ${formatINR(creditCapacity)}`} /></article>}
+      {(advanceUsage.defined > 0 || advanceUsage.used > 0 || creditUsage.defined > 0 || creditUsage.used > 0) && <div className="special-usage-grid">
+        {(advanceUsage.defined > 0 || advanceUsage.used > 0) && <article className="special-usage advance"><span><HandCoins size={20} /> Advance usage</span><strong>{formatINR(advanceUsage.used)}</strong><small>used in {monthLabel(selectedMonth)} · {formatINR(advanceUsage.defined)} advance defined</small><progress max={Math.max(advanceUsage.defined, advanceUsage.used, 1)} value={advanceUsage.used} aria-label={`Advance usage ${formatINR(advanceUsage.used)} of ${formatINR(advanceUsage.defined)}`} /></article>}
+        {(creditUsage.defined > 0 || creditUsage.used > 0) && <article className="special-usage credit"><span><CreditCard size={20} /> Credit usage</span><strong>{formatINR(creditUsage.used)}</strong><small>used in {monthLabel(selectedMonth)} · {formatINR(creditUsage.defined)} credit limit defined</small><progress max={Math.max(creditUsage.defined, creditUsage.used, 1)} value={creditUsage.used} aria-label={`Credit usage ${formatINR(creditUsage.used)} of ${formatINR(creditUsage.defined)}`} /></article>}
       </div>}
       <form className="budget-form" action="#" onSubmit={submitBudget}><label htmlFor="monthly-budget"><span>{monthLabel(selectedMonth)} budget amount (₹)</span><input id="monthly-budget" name="monthly-budget" type="number" inputMode="decimal" min="0" max="1000000000" value={budgetDraft} onChange={(event) => setBudgetDraft(event.target.value)} required /></label><button className="primary-button" type="submit">Save budget</button></form>
     </section>
-    <section className="module-card ledger-section"><div className="section-heading"><div><h2>Advance Payment 1–5</h2><small>Add each merchant and the advance amount already paid.</small></div><span className="outside-budget">Outside monthly budget</span></div><div className="ledger-grid">{advanceAccounts.map((account) => <AccountCard key={account.id} account={account} kind="advance" used={lifetimeUsage(account.id)} onChange={(accountPatch) => onAccountChange("advance", account.id, accountPatch)} />)}</div></section>
-    <section className="module-card ledger-section"><div className="section-heading"><div><h2>Credit Borrow 1–5</h2><small>Add each merchant and set the maximum credit you allow.</small></div><span className="outside-budget">Outside monthly budget</span></div><div className="ledger-grid">{creditAccounts.map((account) => <AccountCard key={account.id} account={account} kind="credit" used={lifetimeUsage(account.id)} onChange={(accountPatch) => onAccountChange("credit", account.id, accountPatch)} />)}</div></section>
+    <section className="module-card ledger-section"><div className="section-heading"><div><h2>Advance Payment 1–5</h2><small>Add each merchant and the advance amount already paid.</small></div><span className="outside-budget">Outside monthly budget</span></div><div className="ledger-grid">{advanceAccounts.map((account) => <AccountCard key={account.id} account={account} kind="advance" used={advanceUsage.rows.find((row) => row.id === account.id)?.used || 0} onChange={(accountPatch) => onAccountChange("advance", account.id, accountPatch)} />)}</div></section>
+    <section className="module-card ledger-section"><div className="section-heading"><div><h2>Credit Borrow 1–5</h2><small>Add each merchant and set the maximum credit you allow.</small></div><span className="outside-budget">Outside monthly budget</span></div><div className="ledger-grid">{creditAccounts.map((account) => <AccountCard key={account.id} account={account} kind="credit" used={creditUsage.rows.find((row) => row.id === account.id)?.used || 0} onChange={(accountPatch) => onAccountChange("credit", account.id, accountPatch)} />)}</div></section>
   </div>;
 }
 
@@ -280,12 +296,12 @@ function AddExpenseDrawer({ expense, aliases, defaultFrequency, initialDate = DI
         <div className="drawer-head"><div><span>{editing ? "Update your entry" : isFuture ? "Schedule an upcoming payment" : `${FREQUENCY_LABELS[form.frequency]} expense`}</span><h2 id="drawer-title">{editing ? "Edit expense" : isFuture ? "Plan expense" : "Add expense"}</h2></div><button type="button" className="icon-button" onClick={onClose} aria-label="Close"><X size={22} /></button></div>
         <form action="#" onSubmit={submit} noValidate>
           <fieldset className="frequency-fieldset"><legend>Spending frequency</legend><FrequencyTabs value={form.frequency} onChange={changeFrequency} /></fieldset>
-          <div className="form-step"><span>1</span><div><strong>Classify the spending</strong><small>Choose the broad category first, then the specific sub-category.</small></div></div>
+          <div className="form-step"><div><strong>Classify the Spending</strong><small>Choose the broad category first, then the specific sub-category.</small></div></div>
           <div className="form-grid two-col ordered-fields">
             <label htmlFor="expense-category-group"><span>Category</span><select id="expense-category-group" name="category-group" value={form.categoryGroup} onChange={(event) => changeCategoryGroup(event.target.value)} autoFocus>{CATEGORY_GROUPS[form.frequency].map((group) => <option value={group.name} key={group.name}>{group.name}</option>)}</select></label>
             <label htmlFor="expense-category"><span>Sub-category</span><select id="expense-category" name="subcategory" value={form.category} onChange={(event) => setForm((current) => ({ ...current, category: event.target.value, subcategory: event.target.value }))}>{subcategories.map((category) => <option key={category}>{category}</option>)}</select></label>
           </div>
-          <div className="form-step"><span>2</span><div><strong>Add the expense details</strong><small>Only the amount and date are required.</small></div></div>
+          <div className="form-step"><div><strong>Add the Expense Details</strong><small>Only the amount and date are required.</small></div></div>
           <label htmlFor="expense-amount"><span>Amount (₹)</span><input id="expense-amount" name="amount" inputMode="decimal" type="number" min="1" max="10000000" value={form.amount} onChange={(event) => set("amount", event.target.value)} aria-invalid={Boolean(errors.amount)} aria-describedby={errors.amount ? "amount-error" : undefined} required />{errors.amount && <small id="amount-error" className="field-error">{errors.amount}</small>}</label>
           <label htmlFor="expense-name"><span>Expense name <small>Optional</small></span><input id="expense-name" name="expense-name" value={form.name} onChange={(event) => set("name", event.target.value)} placeholder={`Defaults to ${form.category}`} maxLength="60" /></label>
           <label htmlFor="expense-date"><span>Date</span><input id="expense-date" name="date" type="date" value={form.date} onChange={(event) => set("date", event.target.value)} required /><small className="field-hint">Today is {titleCaseDate(DISPLAY_DATE)}. Future dates are saved as planned expenses.</small></label>
@@ -329,6 +345,16 @@ export function App() {
   const saveExpense = (nextExpense) => { setSaved((current) => upsertExpenseWithArchive(current, nextExpense)); closeDrawer(); setToast(drawer.expense ? "Expense updated · old value archived" : nextExpense.status === "planned" ? "Planned expense saved" : "Expense added"); };
   const deleteExpense = (id) => { setSaved((current) => deleteExpenseWithArchive(current, id)); closeDrawer(); setToast("Expense deleted · old value archived"); };
   const navigate = (id) => { setActive(id); setMobileMenu(false); };
+  const toggleDark = () => setSaved((current) => ({ ...current, dark: !current.dark }));
+  const updateProfilePhoto = async (file) => {
+    try {
+      const profilePhoto = await prepareProfilePhoto(file);
+      setSaved((current) => ({ ...current, profilePhoto }));
+      setToast("Profile picture updated privately on this device");
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : "Could not use that image");
+    }
+  };
   const updateAccount = (kind, id, accountPatch) => { const key = kind === "advance" ? "advanceAccounts" : "creditAccounts"; setSaved((current) => ({ ...current, [key]: current[key].map((account) => account.id === id ? { ...account, ...accountPatch } : account) })); };
   const reset = () => { if (window.confirm("Reset all local expense data, budget and ledgers to the original demo?")) { setSaved(createDefaultState()); setToast("Demo data restored"); } };
   const installApp = async () => { if (!installPrompt) { setToast("Use your browser menu to add Pocket Ledger to the home screen"); return; } await installPrompt.prompt(); const result = await installPrompt.userChoice; if (result.outcome === "accepted") setToast("Pocket Ledger installed"); setInstallPrompt(null); };
@@ -339,9 +365,9 @@ export function App() {
   else if (active === "budget") view = <BudgetView monthlyBudget={saved.monthlyBudget} monthlyBudgets={saved.monthlyBudgets} expenses={expenses} advanceAccounts={saved.advanceAccounts} creditAccounts={saved.creditAccounts} onBudgetChange={(monthKey, monthlyBudget) => { setSaved((current) => withBudgetForMonth(current, monthKey, monthlyBudget)); setToast(`${monthLabel(monthKey)} budget saved`); }} onAccountChange={updateAccount} />;
   else if (active === "categories") view = <CategoriesView expenses={expenses} frequency={frequency} />;
   else if (active === "reports") view = <ReportsView expenses={expenses} aliases={aliases} onEdit={(expense) => openEdit(expense)} />;
-  else if (active === "settings") view = <SettingsView dark={saved.dark} onToggleDark={() => setSaved((current) => ({ ...current, dark: !current.dark }))} onReset={reset} installAvailable={Boolean(installPrompt)} installed={installed} onInstall={installApp} />;
+  else if (active === "settings") view = <SettingsView dark={saved.dark} onToggleDark={toggleDark} onReset={reset} installAvailable={Boolean(installPrompt)} installed={installed} onInstall={installApp} />;
   else view = <Dashboard expenses={expenses} aliases={aliases} frequency={frequency} monthlyBudget={saved.monthlyBudget} monthlyBudgets={saved.monthlyBudgets} advanceAccounts={saved.advanceAccounts} creditAccounts={saved.creditAccounts} onEdit={(expense) => openEdit(expense)} onViewAll={() => setActive("transactions")} />;
 
   const showFrequencyTabs = ["dashboard", "transactions", "categories"].includes(active);
-  return <div className="app-shell"><Sidebar active={active} onNavigate={navigate} dark={saved.dark} onToggleDark={() => setSaved((current) => ({ ...current, dark: !current.dark }))} budgetSpent={budgetSpent} monthlyBudget={currentBudget} />{mobileMenu && <MobileMenuDrawer active={active} onNavigate={navigate} onClose={() => setMobileMenu(false)} />}<main className="main-content"><Header active={active} onAdd={openNew} onToggleMenu={() => setMobileMenu(true)} menuOpen={mobileMenu} />{showFrequencyTabs && <FrequencyTabs value={frequency} onChange={setFrequency} />}{view}</main><MobileNav active={active} onNavigate={navigate} onAdd={openNew} />{drawer.open && <AddExpenseDrawer key={drawer.expense?.id || `new-${frequency}-${drawer.initialDate}`} expense={drawer.expense} aliases={aliases} defaultFrequency={frequency} initialDate={drawer.initialDate} defaultStatus={drawer.defaultStatus} requiresDisclaimers={drawer.requiresDisclaimers} monthlyBudget={saved.monthlyBudget} monthlyBudgets={saved.monthlyBudgets} advanceAccounts={saved.advanceAccounts} creditAccounts={saved.creditAccounts} allExpenses={expenses} onClose={closeDrawer} onSave={saveExpense} onDelete={deleteExpense} />}{toast && <div className="toast" role="status"><Check size={18} weight="bold" /> {toast}</div>}</div>;
+  return <div className="app-shell"><Sidebar active={active} onNavigate={navigate} dark={saved.dark} onToggleDark={toggleDark} budgetSpent={budgetSpent} monthlyBudget={currentBudget} profilePhoto={saved.profilePhoto} onProfilePhoto={updateProfilePhoto} />{mobileMenu && <MobileMenuDrawer active={active} onNavigate={navigate} onClose={() => setMobileMenu(false)} dark={saved.dark} onToggleDark={toggleDark} profilePhoto={saved.profilePhoto} onProfilePhoto={updateProfilePhoto} />}<main className="main-content"><Header active={active} onAdd={openNew} onToggleMenu={() => setMobileMenu(true)} menuOpen={mobileMenu} />{showFrequencyTabs && <FrequencyTabs value={frequency} onChange={setFrequency} />}{view}</main><MobileNav active={active} onNavigate={navigate} />{drawer.open && <AddExpenseDrawer key={drawer.expense?.id || `new-${frequency}-${drawer.initialDate}`} expense={drawer.expense} aliases={aliases} defaultFrequency={frequency} initialDate={drawer.initialDate} defaultStatus={drawer.defaultStatus} requiresDisclaimers={drawer.requiresDisclaimers} monthlyBudget={saved.monthlyBudget} monthlyBudgets={saved.monthlyBudgets} advanceAccounts={saved.advanceAccounts} creditAccounts={saved.creditAccounts} allExpenses={expenses} onClose={closeDrawer} onSave={saveExpense} onDelete={deleteExpense} />}{toast && <div className="toast" role="status"><Check size={18} weight="bold" /> {toast}</div>}</div>;
 }

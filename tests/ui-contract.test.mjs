@@ -17,6 +17,10 @@ test("mobile navigation is a top-left drawer rather than a centered sheet", () =
   assert.match(appSource, /className="mobile-menu-drawer"[^>]+role="dialog"[^>]+aria-modal="true"/);
   assert.match(styles, /\.mobile-menu-panel\s*\{[^}]*inset:\s*0 auto 0 0;/s);
   assert.match(styles, /@keyframes menu-slide-in/);
+  assert.match(appSource, /className="menu-theme-toggle"/);
+  assert.match(appSource, /id="mobile-profile-photo"/);
+  const mobileNav = appSource.slice(appSource.indexOf("function MobileNav"), appSource.indexOf("function Header"));
+  assert.doesNotMatch(mobileNav, /mobile-add|Add expense/);
 });
 
 test("expense entry follows the requested classification and amount order", () => {
@@ -33,4 +37,7 @@ test("expense entry follows the requested classification and amount order", () =
   assert.ok(positions.every((position) => position >= 0));
   assert.deepEqual(positions, [...positions].sort((a, b) => a - b));
   assert.match(drawer, /Expense name <small>Optional<\/small>/);
+  assert.match(drawer, />Classify the Spending</);
+  assert.match(drawer, />Add the Expense Details</);
+  assert.doesNotMatch(drawer, /className="form-step"><span>[12]<\/span>/);
 });

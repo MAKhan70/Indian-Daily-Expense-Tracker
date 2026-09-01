@@ -11,6 +11,7 @@ import {
   deleteExpenseWithArchive,
   isBudgetExpense,
   indiaDateKey,
+  ledgerUsageForMonth,
   expensesForMonth,
   getBudgetForMonth,
   monthLabel,
@@ -23,10 +24,11 @@ import {
 test("provides broad category libraries for every expense frequency", () => {
   assert.deepEqual(Object.keys(CATEGORY_LIBRARY), ["daily", "weekly", "monthly", "one-off"]);
   for (const categories of Object.values(CATEGORY_LIBRARY)) {
-    assert.ok(categories.length >= 15);
+    assert.ok(categories.length >= 80);
     assert.equal(new Set(categories).size, categories.length);
   }
   for (const frequency of Object.keys(CATEGORY_LIBRARY)) {
+    assert.ok(CATEGORY_GROUPS[frequency].length >= 10);
     assert.deepEqual(CATEGORY_GROUPS[frequency].flatMap((group) => group.subcategories).sort(), [...CATEGORY_LIBRARY[frequency]].sort());
   }
 });
@@ -68,6 +70,21 @@ test("excludes advance and credit activity from the monthly budget", () => {
   assert.equal(isBudgetExpense({ payment: "credit-5" }), false);
 });
 
+test("recalculates monthly advance and credit usage against the defined amounts", () => {
+  const expenses = [
+    { payment: "advance-1", amount: 1200, date: "2026-09-01", status: "actual" },
+    { payment: "advance-1", amount: 300, date: "2026-09-05", status: "actual" },
+    { payment: "advance-1", amount: 900, date: "2026-08-29", status: "actual" },
+    { payment: "advance-1", amount: 500, date: "2026-09-20", status: "planned" },
+    { payment: "credit-1", amount: 2100, date: "2026-09-06", status: "actual" },
+  ];
+  const advance = ledgerUsageForMonth(expenses, [{ id: "advance-1", label: "Advance 1", amountPaid: 5000 }], "2026-09", "advance");
+  const credit = ledgerUsageForMonth(expenses, [{ id: "credit-1", label: "Credit 1", creditLimit: 10000 }], "2026-09", "credit");
+
+  assert.deepEqual({ used: advance.used, defined: advance.defined, available: advance.available }, { used: 1500, defined: 5000, available: 3500 });
+  assert.deepEqual({ used: credit.used, defined: credit.defined, available: credit.available }, { used: 2100, defined: 10000, available: 7900 });
+});
+
 test("uses the current calendar date in India instead of a fixed demo date", () => {
   assert.equal(indiaDateKey(new Date("2026-08-31T19:00:00.000Z")), "2026-09-01");
   assert.equal(indiaDateKey(new Date("2026-08-31T18:29:59.000Z")), "2026-08-31");
@@ -79,6 +96,7 @@ test("creates a complete editable default budget and ledger state", () => {
   assert.equal(state.advanceAccounts.length, 5);
   assert.equal(state.creditAccounts.length, 5);
   assert.deepEqual(state.archivedExpenses, []);
+  assert.equal(state.profilePhoto, "");
   assert.ok(state.expenses.every((expense) => CATEGORY_LIBRARY[expense.frequency].includes(expense.category)));
   assert.ok(state.expenses.every((expense) => CATEGORY_GROUPS[expense.frequency].some((group) => group.name === expense.categoryGroup && group.subcategories.includes(expense.subcategory))));
   const planned = state.expenses.filter(isPlannedExpense);

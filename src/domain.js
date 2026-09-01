@@ -23,60 +23,76 @@ export const FREQUENCIES = [
   { id: "one-off", label: "One-off", description: "Occasional, seasonal and exceptional spending" },
 ];
 
-export const CATEGORY_LIBRARY = {
+export const CATEGORY_GROUPS = {
   daily: [
-    "Groceries", "Vegetables & Fruits", "Milk & Dairy", "Breakfast", "Lunch", "Dinner",
-    "Tea & Snacks", "Local Transport", "Fuel", "Parking & Tolls", "Medicines", "Household Supplies",
-    "Personal Care", "Domestic Help", "School Daily", "Pet Care", "Work Expense", "Miscellaneous Daily",
+    { name: "Groceries & Fresh Food", subcategories: ["Groceries", "Kirana Store", "Supermarket", "Ration / PDS Shop", "Vegetables & Fruits", "Local Mandi Purchase", "Milk & Dairy", "Bread & Bakery", "Eggs", "Meat & Poultry", "Fish & Seafood", "Cooking Essentials", "Drinking Water Can"] },
+    { name: "Meals, Tea & Snacks", subcategories: ["Breakfast", "Lunch", "Dinner", "Tea & Snacks", "Street Food", "Office Canteen", "School Canteen", "Tiffin Service", "Restaurant Meal", "Food Delivery", "Sweets & Mithai", "Juice & Beverages"] },
+    { name: "Local Travel & Commute", subcategories: ["Local Transport", "City Bus", "Village / District Bus", "Metro", "Suburban Train", "Auto-rickshaw", "E-rickshaw", "Cycle Rickshaw", "Shared Auto / Tempo", "Taxi / Cab", "Two-wheeler Taxi", "Ferry / Boat", "Daily Train Ticket", "Last-mile Commute"] },
+    { name: "Fuel, Parking & Roads", subcategories: ["Fuel", "Petrol", "Diesel", "CNG", "EV Charging", "Parking & Tolls", "FASTag Recharge", "Air Filling / Puncture", "Minor Vehicle Fix"] },
+    { name: "Home & Daily Utilities", subcategories: ["Household Supplies", "Cleaning Supplies", "Kitchen Supplies", "Electricity Prepaid Recharge", "Water Purchase", "LPG Top-up", "Kerosene", "Laundry", "Ironing", "Domestic Help", "Waste Collection Fee"] },
+    { name: "Health & Medicines", subcategories: ["Medicines", "Pharmacy Purchase", "Doctor Consultation", "Government Clinic", "Private Clinic", "Diagnostic Test", "First Aid", "Ayurveda / Unani / Homeopathy", "Medical Consumables", "Elder Care", "Women’s Health", "Dental Care"] },
+    { name: "Personal Care & Clothing", subcategories: ["Personal Care", "Toiletries", "Salon / Barber", "Beauty Care", "Skincare", "Clothing", "Footwear", "Tailoring / Alteration", "Mobile Accessories", "Daily Laundry"] },
+    { name: "Children & Education", subcategories: ["School Daily", "School Transport", "Notebook & Stationery", "Photocopy / Printing", "Tuition Daily", "Exam Form", "Pocket Money", "Childcare", "Educational App", "Library / Reading"] },
+    { name: "Work & Small Business", subcategories: ["Work Expense", "Office Commute", "Business Supplies", "Shop Supplies", "Raw Material Daily", "Packaging", "Courier / Delivery", "Printing & Xerox", "Tea for Staff", "Daily Wages", "Market Fee"] },
+    { name: "Mobile, Digital & Finance", subcategories: ["Mobile Recharge", "Data Pack", "Public Wi-Fi", "UPI / Banking Fee", "ATM Fee", "Wallet Top-up", "Digital Service Fee", "Online Convenience Fee", "Cyber Cafe"] },
+    { name: "Family, Community & Faith", subcategories: ["Family Support", "Neighbourhood Help", "Religious Offering", "Temple / Mosque / Church / Gurudwara", "Community Collection", "Charity", "Guest Hospitality", "Local Event", "Funeral Support"] },
+    { name: "Farm, Livestock & Rural", subcategories: ["Farm Labour Daily", "Fodder", "Cattle Feed", "Poultry Feed", "Seeds", "Fertiliser Small Purchase", "Pesticide Small Purchase", "Irrigation Charge", "Tractor / Tiller Hire", "Mandi Transport", "Veterinary Medicine", "Farm Tools"] },
+    { name: "Pets & Animal Care", subcategories: ["Pet Care", "Pet Food", "Pet Medicine", "Grooming", "Stray Animal Feeding", "Veterinary Visit"] },
+    { name: "Other Daily Spending", subcategories: ["News & Newspaper", "Entertainment", "Tobacco / Paan", "Emergency Cash", "Miscellaneous Daily"] },
   ],
   weekly: [
-    "Weekly Groceries", "Farmers Market", "Family Dining", "Family Outing", "Laundry & Dry Cleaning",
-    "Home Cleaning", "Religious & Community", "Kids Allowance", "Meal Preparation", "Vehicle Upkeep",
-    "Sports & Fitness", "Hobbies", "Weekly Commute", "Caregiver", "Miscellaneous Weekly",
+    { name: "Food & Market Shopping", subcategories: ["Weekly Groceries", "Farmers Market", "Weekly Haat / Bazaar", "Wholesale Market", "Vegetable Stock-up", "Fruit Stock-up", "Meat / Fish Purchase", "Dairy Stock-up", "Grains & Pulses", "Spices & Dry Goods", "Snacks Stock-up", "Drinking Water Supply"] },
+    { name: "Cooking & Family Meals", subcategories: ["Meal Preparation", "Tiffin Subscription", "Family Dining", "Sunday Meal", "Community Kitchen", "Bakery Order", "Sweets Purchase", "Cooking Gas Reserve"] },
+    { name: "Home Cleaning & Upkeep", subcategories: ["Home Cleaning", "Laundry & Dry Cleaning", "Bathroom Supplies", "Kitchen Cleaning", "Pest Control Small Visit", "Gardening", "Minor Plumbing", "Minor Electrical Work", "Waste / Scrap Pickup"] },
+    { name: "Travel & Weekly Commute", subcategories: ["Weekly Commute", "Bus Pass Top-up", "Metro Card Top-up", "Train Pass Top-up", "Shared Vehicle Fare", "Intercity Bus", "Fuel Stock-up", "Parking Pass", "Toll / FASTag Top-up"] },
+    { name: "Vehicle Care", subcategories: ["Vehicle Upkeep", "Two-wheeler Wash", "Car Wash", "Chain Oil / Lubrication", "Puncture Repair", "Battery Check", "Minor Spare Part", "Local Mechanic"] },
+    { name: "Children & Learning", subcategories: ["Kids Allowance", "Tuition Class", "Coaching Class", "Stationery Restock", "School Project", "Sports Coaching", "Music / Dance Class", "Library", "School Activity"] },
+    { name: "Health & Care", subcategories: ["Weekly Medicines", "Physiotherapy", "Caregiver", "Elder Support", "Nutrition Supplements", "Fitness Class", "Yoga Class", "Therapy / Counselling", "Health Check"] },
+    { name: "Family & Leisure", subcategories: ["Family Outing", "Cinema", "OTT Movie Rental", "Park / Fair", "Sports & Fitness", "Hobbies", "Gaming", "Picnic", "Local Tourism", "Eating Out"] },
+    { name: "Work & Business", subcategories: ["Business Inventory", "Raw Materials", "Packaging Supplies", "Courier & Logistics", "Weekly Staff Payment", "Shop Cleaning", "Market Travel", "Printing & Stationery", "Vendor Payment"] },
+    { name: "Farm & Livestock", subcategories: ["Weekly Farm Labour", "Animal Feed", "Veterinary Care", "Seedling Purchase", "Fertiliser", "Pesticide", "Irrigation Diesel", "Equipment Hire", "Produce Transport", "Mandi Charges"] },
+    { name: "Faith & Community", subcategories: ["Religious & Community", "Weekly Offering", "Community Meal", "Self-help Group Meeting", "Resident Collection", "Local Club", "Volunteer Expense", "Charitable Support"] },
+    { name: "Personal & Other", subcategories: ["Salon / Grooming", "Clothing Care", "Tailoring", "Mobile / Device Care", "Household Cash", "Miscellaneous Weekly"] },
   ],
   monthly: [
-    "Rent", "Home Loan EMI", "Society Maintenance", "Electricity", "Water", "LPG / Gas", "Mobile Bill",
-    "Broadband", "DTH / Streaming", "Insurance", "School Fees", "Tuition", "Domestic Help Salary",
-    "Loan EMI", "Medical Care", "Monthly Groceries", "Fuel Budget", "Subscriptions", "Taxes", "Investments",
-    "Professional Fees", "Miscellaneous Monthly",
+    { name: "Housing & Property", subcategories: ["Rent", "Home Loan EMI", "Society Maintenance", "Apartment Maintenance", "PG / Hostel Rent", "Shop Rent", "Office Rent", "Warehouse Rent", "Property Caretaker", "Property Management Fee"] },
+    { name: "Electricity, Water & Energy", subcategories: ["Electricity", "Prepaid Electricity", "Water", "Municipal Water", "Water Tanker", "Borewell Maintenance", "LPG / Gas", "Piped Gas", "Kerosene", "Solar Maintenance", "Generator Fuel"] },
+    { name: "Mobile, Internet & Media", subcategories: ["Mobile Bill", "Family Mobile Recharges", "Broadband", "Fiber Internet", "DTH / Streaming", "Cable TV", "Landline", "Newspaper", "Digital News", "Cloud Storage", "Subscriptions"] },
+    { name: "Food & Household Budget", subcategories: ["Monthly Groceries", "Ration Purchase", "Wholesale Staples", "Milk Subscription", "Tiffin / Meal Plan", "Household Supplies", "Cleaning Products", "Drinking Water Subscription"] },
+    { name: "Education & Coaching", subcategories: ["School Fees", "College Fees", "Tuition", "Coaching Institute", "Competitive Exam Coaching", "School Transport", "Hostel Fees", "Books & Stationery", "Digital Learning", "Daycare / Creche", "Skill Training"] },
+    { name: "Domestic & Family Support", subcategories: ["Domestic Help Salary", "Cook Salary", "Driver Salary", "Caregiver Salary", "Security Guard", "Elder Support", "Parents Support", "Child Support", "Family Allowance"] },
+    { name: "Transport & Vehicle", subcategories: ["Fuel Budget", "Public Transport Pass", "Metro Pass", "Railway Season Ticket", "School Bus Fee", "Vehicle Loan EMI", "Vehicle Service Plan", "Parking Rental", "FASTag Budget", "Driver Expense"] },
+    { name: "Loans, Credit & Finance", subcategories: ["Loan EMI", "Personal Loan EMI", "Gold Loan EMI", "Education Loan EMI", "Business Loan EMI", "Microfinance Repayment", "Self-help Group Contribution", "Chit Fund Contribution", "Bank Charges", "Credit Card Bill"] },
+    { name: "Insurance & Healthcare", subcategories: ["Insurance", "Health Insurance", "Life Insurance", "Vehicle Insurance", "Crop Insurance", "Medical Care", "Regular Medicines", "Doctor Follow-up", "Diagnostic Plan", "Therapy / Rehabilitation"] },
+    { name: "Savings & Investments", subcategories: ["Investments", "Recurring Deposit", "Systematic Investment Plan", "Public Provident Fund", "National Pension System", "Post Office Saving", "Gold Saving Scheme", "Emergency Fund", "Child Education Fund"] },
+    { name: "Taxes & Government Charges", subcategories: ["Taxes", "Property Tax", "Professional Tax", "Municipal Charge", "Panchayat Charge", "Trade Licence", "GST Payment", "Income Tax Advance", "Government Service Fee"] },
+    { name: "Business & Professional", subcategories: ["Professional Fees", "Accounting Fee", "Legal Retainer", "Shop Staff Salary", "Office Supplies", "Software Subscription", "Business Internet", "Inventory Restock", "Warehouse Charge", "Delivery / Logistics"] },
+    { name: "Farm & Rural Operations", subcategories: ["Farm Lease", "Agriculture Loan EMI", "Farm Labour", "Seeds & Saplings", "Fertiliser & Manure", "Pesticides", "Irrigation", "Tractor EMI / Hire", "Dairy Operations", "Poultry Operations", "Cold Storage", "Mandi / APMC Fees"] },
+    { name: "Lifestyle, Clubs & Memberships", subcategories: ["Gym Membership", "Sports Club", "Community Club", "Religious Contribution", "OTT Memberships", "Music Subscription", "Gaming Subscription", "Hobby Class", "Pet Care Plan"] },
+    { name: "Other Monthly Spending", subcategories: ["Charity", "Pocket Allowance", "Contingency", "Miscellaneous Monthly"] },
   ],
   "one-off": [
-    "Appliances", "Furniture", "Electronics", "Medical Emergency", "Travel & Holiday", "Festival",
-    "Gifts", "Wedding & Events", "Home Repair", "Home Renovation", "Vehicle Repair", "Vehicle Purchase",
-    "Education Admission", "Legal Fees", "Relocation", "Jewellery", "Donation", "Large Purchase",
-    "Emergency Support", "Miscellaneous One-off",
+    { name: "Home Appliances & Furniture", subcategories: ["Appliances", "Refrigerator", "Washing Machine", "Air Conditioner / Cooler", "Television", "Water Purifier", "Kitchen Appliance", "Furniture", "Mattress & Bedding", "Inverter / Battery", "Solar Equipment", "Large Purchase"] },
+    { name: "Home Repair & Construction", subcategories: ["Home Repair", "Home Renovation", "Painting", "Plumbing", "Electrical Rewiring", "Roof Repair", "Carpentry", "Flooring / Tiles", "Bathroom Renovation", "Kitchen Renovation", "Construction Material", "Labour Contractor", "Borewell", "Water Tank"] },
+    { name: "Electronics & Digital", subcategories: ["Electronics", "Mobile Phone", "Laptop / Computer", "Tablet", "Camera", "Printer", "Smartwatch", "Home Theatre", "Gaming Console", "CCTV / Security", "Software Purchase"] },
+    { name: "Vehicle Purchase & Major Repair", subcategories: ["Vehicle Purchase", "Two-wheeler Purchase", "Car Purchase", "Commercial Vehicle", "E-rickshaw Purchase", "Tractor Purchase", "Vehicle Repair", "Engine Repair", "Tyre Replacement", "Battery Replacement", "Insurance Claim Expense", "Registration / Transfer"] },
+    { name: "Medical & Health Events", subcategories: ["Medical Emergency", "Hospital Admission", "Surgery", "Maternity", "Dental Procedure", "Eye Care / Glasses", "Medical Equipment", "Long-term Treatment", "Alternative Treatment", "Ambulance"] },
+    { name: "Education & Career", subcategories: ["Education Admission", "College Admission", "School Admission", "Coaching Admission", "Exam Fee", "Study Abroad", "Laptop for Education", "Professional Certification", "Vocational Training", "Education Donation"] },
+    { name: "Wedding & Family Ceremonies", subcategories: ["Wedding & Events", "Engagement", "Wedding Venue", "Catering", "Wedding Clothing", "Wedding Jewellery", "Photography", "Naming Ceremony", "Birthday Event", "Anniversary", "Housewarming", "Funeral / Last Rites"] },
+    { name: "Festivals & Religious Events", subcategories: ["Festival", "Diwali", "Eid", "Holi", "Christmas", "Pongal / Sankranti", "Onam", "Durga Puja / Navratri", "Ganesh Chaturthi", "Baisakhi", "Chhath Puja", "Religious Ceremony", "Pilgrimage Offering"] },
+    { name: "Travel, Holiday & Pilgrimage", subcategories: ["Travel & Holiday", "Flight Tickets", "Rail Tickets", "Bus Tickets", "Hotel / Stay", "Tour Package", "Pilgrimage", "Visa / Passport", "Travel Insurance", "Local Sightseeing", "Relocation"] },
+    { name: "Government, Legal & Property", subcategories: ["Legal Fees", "Court Fee", "Stamp Duty", "Property Registration", "Land Survey", "Mutation / Khata", "Government Certificate", "Licence / Permit", "Penalty / Fine", "Consultant / Broker"] },
+    { name: "Business & Professional Setup", subcategories: ["Business Setup", "Shop Renovation", "Machinery Purchase", "Commercial Equipment", "Initial Inventory", "Franchise Fee", "Security Deposit", "Website / Branding", "Professional Equipment", "Business Registration"] },
+    { name: "Farm & Rural Infrastructure", subcategories: ["Farm Equipment", "Tractor / Tiller", "Irrigation Pump", "Drip Irrigation", "Greenhouse", "Cattle Purchase", "Poultry Setup", "Dairy Equipment", "Farm Shed", "Land Preparation", "Crop Loss Recovery"] },
+    { name: "Gifts, Jewellery & Personal", subcategories: ["Gifts", "Jewellery", "Gold Purchase", "Silver Purchase", "Festival Clothing", "Luxury Purchase", "Personal Celebration", "Family Gift", "Corporate Gift"] },
+    { name: "Emergency & Community Support", subcategories: ["Emergency Support", "Family Emergency", "Disaster Recovery", "Donation", "Community Project", "Medical Help for Others", "Education Help for Others", "Religious Donation"] },
+    { name: "Other One-off Spending", subcategories: ["Refundable Deposit", "Lost / Damaged Item", "Unexpected Charge", "Miscellaneous One-off"] },
   ],
 };
 
-export const CATEGORY_GROUPS = {
-  daily: [
-    { name: "Food & Groceries", subcategories: ["Groceries", "Vegetables & Fruits", "Milk & Dairy", "Breakfast", "Lunch", "Dinner", "Tea & Snacks"] },
-    { name: "Travel & Commute", subcategories: ["Local Transport", "Fuel", "Parking & Tolls"] },
-    { name: "Health & Personal", subcategories: ["Medicines", "Personal Care"] },
-    { name: "Home & Family", subcategories: ["Household Supplies", "Domestic Help", "School Daily", "Pet Care"] },
-    { name: "Work & Other", subcategories: ["Work Expense", "Miscellaneous Daily"] },
-  ],
-  weekly: [
-    { name: "Food & Household", subcategories: ["Weekly Groceries", "Farmers Market", "Meal Preparation", "Home Cleaning", "Laundry & Dry Cleaning"] },
-    { name: "Family & Leisure", subcategories: ["Family Dining", "Family Outing", "Kids Allowance", "Sports & Fitness", "Hobbies"] },
-    { name: "Travel & Care", subcategories: ["Vehicle Upkeep", "Weekly Commute", "Caregiver"] },
-    { name: "Community & Other", subcategories: ["Religious & Community", "Miscellaneous Weekly"] },
-  ],
-  monthly: [
-    { name: "Home & Utilities", subcategories: ["Rent", "Home Loan EMI", "Society Maintenance", "Electricity", "Water", "LPG / Gas", "Domestic Help Salary"] },
-    { name: "Connectivity & Subscriptions", subcategories: ["Mobile Bill", "Broadband", "DTH / Streaming", "Subscriptions"] },
-    { name: "Education & Family", subcategories: ["School Fees", "Tuition", "Monthly Groceries", "Fuel Budget"] },
-    { name: "Finance & Protection", subcategories: ["Insurance", "Loan EMI", "Taxes", "Investments"] },
-    { name: "Health & Professional", subcategories: ["Medical Care", "Professional Fees", "Miscellaneous Monthly"] },
-  ],
-  "one-off": [
-    { name: "Home & Assets", subcategories: ["Appliances", "Furniture", "Electronics", "Home Repair", "Home Renovation", "Large Purchase"] },
-    { name: "Travel & Transport", subcategories: ["Travel & Holiday", "Vehicle Repair", "Vehicle Purchase", "Relocation"] },
-    { name: "Life Events", subcategories: ["Festival", "Gifts", "Wedding & Events", "Education Admission", "Jewellery"] },
-    { name: "Health & Support", subcategories: ["Medical Emergency", "Emergency Support", "Donation"] },
-    { name: "Legal & Other", subcategories: ["Legal Fees", "Miscellaneous One-off"] },
-  ],
-};
+export const CATEGORY_LIBRARY = Object.fromEntries(
+  Object.entries(CATEGORY_GROUPS).map(([frequency, groups]) => [frequency, groups.flatMap((group) => group.subcategories)]),
+);
 
 export function categoryGroupFor(frequency, subcategory) {
   const groups = CATEGORY_GROUPS[frequency] || CATEGORY_GROUPS.daily;
@@ -181,6 +197,24 @@ export function monthLabel(monthKey) {
 export const expensesForMonth = (expenses, monthKey) =>
   expenses.filter((expense) => String(expense.date).startsWith(isMonthKey(monthKey) ? monthKey : DISPLAY_MONTH));
 
+export function ledgerUsageForMonth(expenses, accounts, monthKey, kind) {
+  const safeAccounts = Array.isArray(accounts) ? accounts : [];
+  const amountField = kind === "credit" ? "creditLimit" : "amountPaid";
+  const rows = safeAccounts.map((account) => {
+    const defined = Math.max(Number(account[amountField]) || 0, 0);
+    const used = expensesForMonth(expenses, monthKey)
+      .filter((expense) => expense.status !== "planned" && expense.payment === account.id)
+      .reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
+    return { id: account.id, label: account.label, merchant: account.merchant, defined, used, available: Math.max(defined - used, 0) };
+  });
+  return {
+    rows,
+    defined: rows.reduce((sum, row) => sum + row.defined, 0),
+    used: rows.reduce((sum, row) => sum + row.used, 0),
+    available: rows.reduce((sum, row) => sum + row.available, 0),
+  };
+}
+
 export function getBudgetForMonth(state, monthKey) {
   const safeMonth = isMonthKey(monthKey) ? monthKey : DISPLAY_MONTH;
   const stored = Number(state.monthlyBudgets?.[safeMonth]);
@@ -237,6 +271,7 @@ export function createDefaultState() {
     monthlyBudgets: { [DISPLAY_MONTH]: 50000 },
     aliases: DEFAULT_ALIASES,
     dark: false,
+    profilePhoto: "",
   };
 }
 
@@ -282,6 +317,7 @@ export function loadState() {
       },
       aliases: { ...DEFAULT_ALIASES, ...(parsed.aliases || {}) },
       dark: Boolean(parsed.dark),
+      profilePhoto: typeof parsed.profilePhoto === "string" && parsed.profilePhoto.startsWith("data:image/") ? parsed.profilePhoto : "",
     };
   } catch {
     return fallback;
