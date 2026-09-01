@@ -14,7 +14,9 @@ import {
   ledgerUsageForMonth,
   expensesForMonth,
   getBudgetForMonth,
+  indiaGreeting,
   monthLabel,
+  QUICK_AMOUNTS,
   shiftMonthKey,
   withBudgetForMonth,
   isPlannedExpense,
@@ -29,7 +31,7 @@ test("provides broad category libraries for every expense frequency", () => {
   }
   for (const frequency of Object.keys(CATEGORY_LIBRARY)) {
     assert.ok(CATEGORY_GROUPS[frequency].length >= 10);
-    assert.deepEqual(CATEGORY_GROUPS[frequency].flatMap((group) => group.subcategories).sort(), [...CATEGORY_LIBRARY[frequency]].sort());
+    assert.deepEqual([...new Set(CATEGORY_GROUPS[frequency].flatMap((group) => group.subcategories))].sort(), [...CATEGORY_LIBRARY[frequency]].sort());
   }
 });
 
@@ -90,6 +92,30 @@ test("uses the current calendar date in India instead of a fixed demo date", () 
   assert.equal(indiaDateKey(new Date("2026-08-31T18:29:59.000Z")), "2026-08-31");
 });
 
+test("uses IST for time-sensitive greetings", () => {
+  assert.equal(indiaGreeting(new Date("2026-09-01T05:00:00.000Z")), "Good morning");
+  assert.equal(indiaGreeting(new Date("2026-09-01T08:30:00.000Z")), "Good afternoon");
+  assert.equal(indiaGreeting(new Date("2026-09-01T13:00:00.000Z")), "Good evening");
+});
+
+test("includes requested family, medicine, connectivity and fund fee categories", () => {
+  const monthly = Object.fromEntries(CATEGORY_GROUPS.monthly.map((group) => [group.name, group.subcategories]));
+  assert.deepEqual(monthly["Family Pocket Money"], ["Mother", "Father", "Brother", "Sister", "Wife", "Son 1", "Son 2", "Son 3", "Son 4", "Son 5", "Daughter 1", "Daughter 2", "Daughter 3", "Daughter 4", "Daughter 5"]);
+  assert.ok(monthly.Medicines.includes("Father"));
+  assert.ok(monthly.Medicines.includes("Daughter 5"));
+  assert.ok(monthly["Mobile, Internet & Media"].includes("Postpaid Mobile Bill"));
+  assert.ok(monthly["Mobile, Internet & Media"].includes("WiFi Bill"));
+  const oneOff = CATEGORY_GROUPS["one-off"].find((group) => group.name === "Investment & Fund Management Fees");
+  assert.deepEqual(oneOff.subcategories, ["Quarterly Fund Management Fees", "Half Yearly Fund Management Fees", "Yearly Fund Management Fees"]);
+});
+
+test("provides frequency-specific quick amount selections", () => {
+  assert.deepEqual(QUICK_AMOUNTS.daily, [5, 10, 20, 100]);
+  assert.deepEqual(QUICK_AMOUNTS.weekly, [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]);
+  assert.deepEqual(QUICK_AMOUNTS.monthly, [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]);
+  assert.deepEqual(QUICK_AMOUNTS["one-off"], [10000, 20000, 30000, 40000, 50000]);
+});
+
 test("creates a complete editable default budget and ledger state", () => {
   const state = createDefaultState();
   assert.equal(state.monthlyBudget, 50000);
@@ -97,6 +123,7 @@ test("creates a complete editable default budget and ledger state", () => {
   assert.equal(state.creditAccounts.length, 5);
   assert.deepEqual(state.archivedExpenses, []);
   assert.equal(state.profilePhoto, "");
+  assert.deepEqual(state.appearance, { mode: "light", palette: "heritage", look: "soft" });
   assert.ok(state.expenses.every((expense) => CATEGORY_LIBRARY[expense.frequency].includes(expense.category)));
   assert.ok(state.expenses.every((expense) => CATEGORY_GROUPS[expense.frequency].some((group) => group.name === expense.categoryGroup && group.subcategories.includes(expense.subcategory))));
   const planned = state.expenses.filter(isPlannedExpense);

@@ -51,6 +51,11 @@ export const stateSchema = z.object({
   monthlyBudgets: z.record(monthKey, z.coerce.number().min(0).max(1_000_000_000)),
   aliases: z.record(z.string(), shortText(80)).default({}),
   dark: z.boolean().default(false),
+  appearance: z.object({
+    mode: z.enum(["light", "dark", "system"]),
+    palette: z.enum(["heritage", "indigo", "ocean", "forest", "rose"]),
+    look: z.enum(["soft", "crisp"]),
+  }).default({ mode: "light", palette: "heritage", look: "soft" }),
   profilePhoto: z.string().max(500_000).refine((value) => !value || /^data:image\/(jpeg|png|webp);base64,/.test(value), "Invalid profile image").default(""),
 });
 

@@ -16,6 +16,26 @@ export function indiaDateKey(value = new Date()) {
 export const DISPLAY_DATE = indiaDateKey();
 export const DISPLAY_MONTH = DISPLAY_DATE.slice(0, 7);
 
+export const APPEARANCE_DEFAULTS = { mode: "light", palette: "heritage", look: "soft" };
+
+export const QUICK_AMOUNTS = {
+  daily: [5, 10, 20, 100],
+  weekly: Array.from({ length: 10 }, (_, index) => (index + 1) * 100),
+  monthly: Array.from({ length: 10 }, (_, index) => (index + 1) * 1000),
+  "one-off": Array.from({ length: 5 }, (_, index) => (index + 1) * 10000),
+};
+
+export function indiaGreeting(value = new Date()) {
+  const hour = Number(new Intl.DateTimeFormat("en-IN", {
+    timeZone: INDIA_TIME_ZONE,
+    hour: "2-digit",
+    hourCycle: "h23",
+  }).format(value));
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
 export const FREQUENCIES = [
   { id: "daily", label: "Daily", description: "Everyday essentials and routine purchases" },
   { id: "weekly", label: "Weekly", description: "Planned weekly shops, services and outings" },
@@ -57,10 +77,12 @@ export const CATEGORY_GROUPS = {
   monthly: [
     { name: "Housing & Property", subcategories: ["Rent", "Home Loan EMI", "Society Maintenance", "Apartment Maintenance", "PG / Hostel Rent", "Shop Rent", "Office Rent", "Warehouse Rent", "Property Caretaker", "Property Management Fee"] },
     { name: "Electricity, Water & Energy", subcategories: ["Electricity", "Prepaid Electricity", "Water", "Municipal Water", "Water Tanker", "Borewell Maintenance", "LPG / Gas", "Piped Gas", "Kerosene", "Solar Maintenance", "Generator Fuel"] },
-    { name: "Mobile, Internet & Media", subcategories: ["Mobile Bill", "Family Mobile Recharges", "Broadband", "Fiber Internet", "DTH / Streaming", "Cable TV", "Landline", "Newspaper", "Digital News", "Cloud Storage", "Subscriptions"] },
+    { name: "Mobile, Internet & Media", subcategories: ["Mobile Bill", "Postpaid Mobile Bill", "WiFi Bill", "Family Mobile Recharges", "Broadband", "Fiber Internet", "DTH / Streaming", "Cable TV", "Landline", "Newspaper", "Digital News", "Cloud Storage", "Subscriptions"] },
     { name: "Food & Household Budget", subcategories: ["Monthly Groceries", "Ration Purchase", "Wholesale Staples", "Milk Subscription", "Tiffin / Meal Plan", "Household Supplies", "Cleaning Products", "Drinking Water Subscription"] },
     { name: "Education & Coaching", subcategories: ["School Fees", "College Fees", "Tuition", "Coaching Institute", "Competitive Exam Coaching", "School Transport", "Hostel Fees", "Books & Stationery", "Digital Learning", "Daycare / Creche", "Skill Training"] },
     { name: "Domestic & Family Support", subcategories: ["Domestic Help Salary", "Cook Salary", "Driver Salary", "Caregiver Salary", "Security Guard", "Elder Support", "Parents Support", "Child Support", "Family Allowance"] },
+    { name: "Family Pocket Money", subcategories: ["Mother", "Father", "Brother", "Sister", "Wife", "Son 1", "Son 2", "Son 3", "Son 4", "Son 5", "Daughter 1", "Daughter 2", "Daughter 3", "Daughter 4", "Daughter 5"] },
+    { name: "Medicines", subcategories: ["Father", "Mother", "Brother", "Sister", "Wife", "Son 1", "Son 2", "Son 3", "Son 4", "Son 5", "Daughter 1", "Daughter 2", "Daughter 3", "Daughter 4", "Daughter 5"] },
     { name: "Transport & Vehicle", subcategories: ["Fuel Budget", "Public Transport Pass", "Metro Pass", "Railway Season Ticket", "School Bus Fee", "Vehicle Loan EMI", "Vehicle Service Plan", "Parking Rental", "FASTag Budget", "Driver Expense"] },
     { name: "Loans, Credit & Finance", subcategories: ["Loan EMI", "Personal Loan EMI", "Gold Loan EMI", "Education Loan EMI", "Business Loan EMI", "Microfinance Repayment", "Self-help Group Contribution", "Chit Fund Contribution", "Bank Charges", "Credit Card Bill"] },
     { name: "Insurance & Healthcare", subcategories: ["Insurance", "Health Insurance", "Life Insurance", "Vehicle Insurance", "Crop Insurance", "Medical Care", "Regular Medicines", "Doctor Follow-up", "Diagnostic Plan", "Therapy / Rehabilitation"] },
@@ -85,13 +107,14 @@ export const CATEGORY_GROUPS = {
     { name: "Business & Professional Setup", subcategories: ["Business Setup", "Shop Renovation", "Machinery Purchase", "Commercial Equipment", "Initial Inventory", "Franchise Fee", "Security Deposit", "Website / Branding", "Professional Equipment", "Business Registration"] },
     { name: "Farm & Rural Infrastructure", subcategories: ["Farm Equipment", "Tractor / Tiller", "Irrigation Pump", "Drip Irrigation", "Greenhouse", "Cattle Purchase", "Poultry Setup", "Dairy Equipment", "Farm Shed", "Land Preparation", "Crop Loss Recovery"] },
     { name: "Gifts, Jewellery & Personal", subcategories: ["Gifts", "Jewellery", "Gold Purchase", "Silver Purchase", "Festival Clothing", "Luxury Purchase", "Personal Celebration", "Family Gift", "Corporate Gift"] },
+    { name: "Investment & Fund Management Fees", subcategories: ["Quarterly Fund Management Fees", "Half Yearly Fund Management Fees", "Yearly Fund Management Fees"] },
     { name: "Emergency & Community Support", subcategories: ["Emergency Support", "Family Emergency", "Disaster Recovery", "Donation", "Community Project", "Medical Help for Others", "Education Help for Others", "Religious Donation"] },
     { name: "Other One-off Spending", subcategories: ["Refundable Deposit", "Lost / Damaged Item", "Unexpected Charge", "Miscellaneous One-off"] },
   ],
 };
 
 export const CATEGORY_LIBRARY = Object.fromEntries(
-  Object.entries(CATEGORY_GROUPS).map(([frequency, groups]) => [frequency, groups.flatMap((group) => group.subcategories)]),
+  Object.entries(CATEGORY_GROUPS).map(([frequency, groups]) => [frequency, [...new Set(groups.flatMap((group) => group.subcategories))]]),
 );
 
 export function categoryGroupFor(frequency, subcategory) {
@@ -271,6 +294,7 @@ export function createDefaultState() {
     monthlyBudgets: { [DISPLAY_MONTH]: 50000 },
     aliases: DEFAULT_ALIASES,
     dark: false,
+    appearance: { ...APPEARANCE_DEFAULTS },
     profilePhoto: "",
   };
 }
@@ -317,6 +341,11 @@ export function loadState() {
       },
       aliases: { ...DEFAULT_ALIASES, ...(parsed.aliases || {}) },
       dark: Boolean(parsed.dark),
+      appearance: {
+        mode: ["light", "dark", "system"].includes(parsed.appearance?.mode) ? parsed.appearance.mode : (parsed.dark ? "dark" : "light"),
+        palette: ["heritage", "indigo", "ocean", "forest", "rose"].includes(parsed.appearance?.palette) ? parsed.appearance.palette : APPEARANCE_DEFAULTS.palette,
+        look: ["soft", "crisp"].includes(parsed.appearance?.look) ? parsed.appearance.look : APPEARANCE_DEFAULTS.look,
+      },
       profilePhoto: typeof parsed.profilePhoto === "string" && parsed.profilePhoto.startsWith("data:image/") ? parsed.profilePhoto : "",
     };
   } catch {

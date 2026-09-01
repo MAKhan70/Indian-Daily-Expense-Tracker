@@ -26,7 +26,15 @@ export async function readLedgerState(userId: string) {
     advanceAccounts: advanceAccounts.length === 5 ? advanceAccounts : fallback.advanceAccounts,
     creditAccounts: creditAccounts.length === 5 ? creditAccounts : fallback.creditAccounts,
     monthlyBudget: monthlyBudgets[currentMonth] ?? Object.values(monthlyBudgets)[0] ?? fallback.monthlyBudget,
-    monthlyBudgets, aliases: {}, dark: preference?.dark ?? false, profilePhoto: preference?.profilePhoto ?? "",
+    monthlyBudgets,
+    aliases: {},
+    dark: preference?.dark ?? false,
+    appearance: {
+      mode: (["light", "dark", "system"].includes(preference?.themeMode || "") ? preference?.themeMode : (preference?.dark ? "dark" : "light")) as "light" | "dark" | "system",
+      palette: (["heritage", "indigo", "ocean", "forest", "rose"].includes(preference?.palette || "") ? preference?.palette : "heritage") as "heritage" | "indigo" | "ocean" | "forest" | "rose",
+      look: (["soft", "crisp"].includes(preference?.look || "") ? preference?.look : "soft") as "soft" | "crisp",
+    },
+    profilePhoto: preference?.profilePhoto ?? "",
   } };
 }
 
@@ -44,7 +52,11 @@ export async function replaceLedgerState(userId: string, state: LedgerStateInput
       ...state.advanceAccounts.map((item, index) => ({ userId, kind: "advance", slot: index + 1, paymentId: item.id, label: item.label, merchant: item.merchant, definedAmountMinor: toMinor(item.amountPaid) })),
       ...state.creditAccounts.map((item, index) => ({ userId, kind: "credit", slot: index + 1, paymentId: item.id, label: item.label, merchant: item.merchant, definedAmountMinor: toMinor(item.creditLimit) })),
     ] });
-    await tx.userPreference.upsert({ where: { userId }, create: { userId, dark: state.dark, profilePhoto: state.profilePhoto || null, localImportCompleted }, update: { dark: state.dark, profilePhoto: state.profilePhoto || null, localImportCompleted } });
+    await tx.userPreference.upsert({
+      where: { userId },
+      create: { userId, dark: state.dark, themeMode: state.appearance.mode, palette: state.appearance.palette, look: state.appearance.look, profilePhoto: state.profilePhoto || null, localImportCompleted },
+      update: { dark: state.dark, themeMode: state.appearance.mode, palette: state.appearance.palette, look: state.appearance.look, profilePhoto: state.profilePhoto || null, localImportCompleted },
+    });
   });
   return readLedgerState(userId);
 }

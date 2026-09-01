@@ -167,6 +167,9 @@ model PaymentAccount {
 model UserPreference {
   userId               String   @id
   dark                 Boolean  @default(false)
+  themeMode            String   @default("light")
+  palette              String   @default("heritage")
+  look                  String   @default("soft")
   profilePhoto         String?
   localImportCompleted Boolean  @default(false)
   createdAt            DateTime @default(now())

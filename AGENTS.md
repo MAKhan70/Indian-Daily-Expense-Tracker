@@ -27,3 +27,7 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Ship Pocket Ledger as an installable HTTPS PWA with standalone display metadata, 192px/512px/maskable/Apple icons, an offline application shell, and an in-app install entry point.
 - Prisma and account-backed synchronization are now authorized. Keep every finance query scoped by authenticated user ID, retain the one-time guarded local import, and never cache `/api` responses in the service worker.
 - Keep the frontend and Better Auth API on the same production origin so mobile browsers can use secure first-party session cookies reliably.
+- Dashboard greetings must show the authenticated user's name and derive the date and morning/afternoon/evening period explicitly from Asia/Kolkata time.
+- Expense entry provides frequency-specific quick amounts: ₹5–₹100 Daily, ₹100–₹1,000 Weekly, ₹1,000–₹10,000 Monthly, and ₹10,000–₹50,000 One-off.
+- Settings owns account-synced appearance controls for Light, Dark or Device theme, multiple colour palettes, and Soft Heritage or Clean & Crisp looks; the choices must apply consistently to both the website and installed PWA.
+- Monthly categories include Family Pocket Money and Medicines by named family member, plus Postpaid Mobile Bill and WiFi Bill; One-off includes quarterly, half-yearly and yearly fund management fees.

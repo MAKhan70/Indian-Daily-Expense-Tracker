@@ -23,6 +23,13 @@ test("scopes finance records to a user and cascades account deletion", () => {
   }
 });
 
+test("persists account appearance preferences", () => {
+  const preference = schema.slice(schema.indexOf("model UserPreference"), schema.indexOf("\n}", schema.indexOf("model UserPreference")));
+  assert.match(preference, /themeMode\s+String/);
+  assert.match(preference, /palette\s+String/);
+  assert.match(preference, /look\s+String/);
+});
+
 test("uses strong password limits, database rate limiting and secure production cookies", () => {
   assert.match(auth, /minPasswordLength:\s*12/);
   assert.match(auth, /storage:\s*"database"/);

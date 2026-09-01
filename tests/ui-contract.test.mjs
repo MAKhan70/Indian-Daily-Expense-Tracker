@@ -40,4 +40,18 @@ test("expense entry follows the requested classification and amount order", () =
   assert.match(drawer, />Classify the Spending</);
   assert.match(drawer, />Add the Expense Details</);
   assert.doesNotMatch(drawer, /className="form-step"><span>[12]<\/span>/);
+  assert.match(drawer, /className="quick-amounts"/);
+  assert.match(drawer, /QUICK_AMOUNTS\[form\.frequency\]/);
+});
+
+test("dashboard greeting uses the account name and IST while settings expose appearance controls", () => {
+  const header = appSource.slice(appSource.indexOf("function Header"), appSource.indexOf("function MobileMenuDrawer"));
+  assert.match(header, /indiaGreeting\(now\)/);
+  assert.match(header, /user\?\.name/);
+  assert.match(header, /· IST/);
+  const settings = appSource.slice(appSource.indexOf("function SettingsView"), appSource.indexOf("function AddExpenseDrawer"));
+  assert.match(settings, />Appearance</);
+  assert.match(settings, />Colour palette</);
+  assert.match(settings, />Look</);
+  assert.match(settings, /\["system", "Device"\]/);
 });

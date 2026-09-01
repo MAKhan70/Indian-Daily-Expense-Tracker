@@ -31,6 +31,7 @@ export const emptyLedgerState = () => {
     monthlyBudgets: { [month]: 50000 },
     aliases: {},
     dark: false,
+    appearance: { mode: "light", palette: "heritage", look: "soft" },
     profilePhoto: "",
   };
 };
