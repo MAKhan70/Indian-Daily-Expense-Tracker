@@ -33,3 +33,7 @@ GitHub Pages remains suitable only for the previous static build. Database authe
 Required environment variables are documented in `.env.example`. Set `NODE_ENV=production`, use an HTTPS `BETTER_AUTH_URL`, list only the production origin in `TRUSTED_ORIGINS`, build with `npm run build`, then start with `npm start`. Startup applies the committed SQLite migration idempotently before serving traffic. `npm run db:deploy:prisma` is retained for Prisma-managed deployment environments.
 
 For password-reset and email-verification delivery, configure `RESEND_API_KEY` and `AUTH_EMAIL_FROM`. Until email delivery is configured, keep `REQUIRE_EMAIL_VERIFICATION=false`.
+
+### Railway
+
+The repository includes `railway.json`. Attach a volume at `/data` and set `DATABASE_URL=file:/data/pocket-ledger.db`. Railway supplies `PORT` and `RAILWAY_PUBLIC_DOMAIN`; the latter is used automatically for Better Auth's public URL and trusted origin. Set `BETTER_AUTH_SECRET` as a private variable and `NODE_ENV=production`, then generate a public domain for the service.

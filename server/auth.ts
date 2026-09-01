@@ -4,7 +4,9 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma.js";
 import { sendAuthEmail } from "./email.js";
 
-const trustedOrigins = (process.env.TRUSTED_ORIGINS || "http://localhost:5173,http://localhost:3001")
+const railwayURL = process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : "";
+const publicURL = process.env.BETTER_AUTH_URL || railwayURL || "http://localhost:3001";
+const trustedOrigins = (process.env.TRUSTED_ORIGINS || ["http://localhost:5173", publicURL].filter(Boolean).join(","))
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
@@ -12,7 +14,7 @@ const trustedProxies = (process.env.TRUSTED_PROXY_CIDRS || "127.0.0.1/32,::1/128
 
 export const auth = betterAuth({
   appName: "Pocket Ledger",
-  baseURL: process.env.BETTER_AUTH_URL,
+  baseURL: publicURL,
   trustedOrigins,
   database: prismaAdapter(prisma, { provider: "sqlite" }),
   emailAndPassword: {
