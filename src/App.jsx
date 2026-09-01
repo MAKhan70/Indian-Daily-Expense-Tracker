@@ -20,6 +20,8 @@ import {
   upsertExpenseWithArchive, withBudgetForMonth,
 } from "./domain.js";
 import { LedgerView } from "./LedgerView.jsx";
+import { AuthScreen, ImportChoice, ResetPasswordScreen } from "./AuthScreen.jsx";
+import { authClient } from "./auth-client.js";
 
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: House },
@@ -88,7 +90,7 @@ async function prepareProfilePhoto(file) {
 }
 
 function ProfilePhotoControl({ photo, onFile, id, compact = false }) {
-  return <label className={compact ? "profile-photo-control compact" : "profile-photo-control"} htmlFor={id}><input className="visually-hidden" id={id} name={id} type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) onFile(file); event.target.value = ""; }} /><span className="profile-avatar">{photo ? <img src={photo} alt="Ananya profile" width="52" height="52" /> : <UserCircle size={31} weight="duotone" />}</span><span className="profile-copy"><strong>Ananya</strong><small>{photo ? "Change profile picture" : "Add profile picture"}</small></span><Camera className="profile-camera" size={18} weight="duotone" aria-hidden="true" /></label>;
+  return <label className={compact ? "profile-photo-control compact" : "profile-photo-control"} htmlFor={id}><input className="visually-hidden" id={id} name={id} type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) onFile(file); event.target.value = ""; }} /><span className="profile-avatar">{photo ? <img src={photo} alt="Profile" width="52" height="52" /> : <UserCircle size={31} weight="duotone" />}</span><span className="profile-copy"><strong>Your profile</strong><small>{photo ? "Change profile picture" : "Add profile picture"}</small></span><Camera className="profile-camera" size={18} weight="duotone" aria-hidden="true" /></label>;
 }
 
 function Sidebar({ active, onNavigate, dark, onToggleDark, budgetSpent, monthlyBudget, profilePhoto, onProfilePhoto }) {
@@ -110,7 +112,7 @@ function MobileNav({ active, onNavigate }) {
 
 function Header({ active, onAdd, onToggleMenu, menuOpen }) {
   const label = NAV_ITEMS.find((item) => item.id === active)?.label || "Dashboard";
-  return <header className="page-header"><button id="mobile-menu-trigger" className="mobile-menu" onClick={onToggleMenu} aria-label="Open navigation menu" aria-expanded={menuOpen} aria-controls="mobile-navigation-drawer"><List size={23} weight="bold" /></button><div><p>{titleCaseDate(DISPLAY_DATE)}</p><h1>{active === "dashboard" ? "Good morning, Ananya" : label}</h1><span>{active === "dashboard" ? "A clear view of today, this month, and what comes next." : "Keep every rupee clear and accounted for."}</span></div><button className="primary-button header-add" onClick={onAdd}><Plus size={19} weight="bold" /> Log expense</button></header>;
+  return <header className="page-header"><button id="mobile-menu-trigger" className="mobile-menu" onClick={onToggleMenu} aria-label="Open navigation menu" aria-expanded={menuOpen} aria-controls="mobile-navigation-drawer"><List size={23} weight="bold" /></button><div><p>{titleCaseDate(DISPLAY_DATE)}</p><h1>{active === "dashboard" ? "Good morning" : label}</h1><span>{active === "dashboard" ? "A clear view of today, this month, and what comes next." : "Keep every rupee clear and accounted for."}</span></div><button className="primary-button header-add" onClick={onAdd}><Plus size={19} weight="bold" /> Log expense</button></header>;
 }
 
 function MobileMenuDrawer({ active, onNavigate, onClose, dark, onToggleDark, profilePhoto, onProfilePhoto }) {
@@ -120,7 +122,7 @@ function MobileMenuDrawer({ active, onNavigate, onClose, dark, onToggleDark, pro
     document.body.classList.add("menu-open");
     return () => { document.removeEventListener("keydown", closeOnEscape); document.body.classList.remove("menu-open"); document.getElementById("mobile-menu-trigger")?.focus(); };
   }, [onClose]);
-  return <div className="mobile-menu-drawer" id="mobile-navigation-drawer" role="dialog" aria-modal="true" aria-label="Navigation menu"><button className="mobile-menu-backdrop" onClick={onClose} aria-label="Close navigation menu" /><aside className="mobile-menu-panel"><div className="mobile-menu-head"><div className="brand-block"><span className="brand-mark" aria-hidden="true"><Wallet weight="fill" /></span><div><strong>Pocket Ledger</strong><span>Daily Expense Tracker</span></div></div><button type="button" className="icon-button" onClick={onClose} aria-label="Close menu" autoFocus><X size={21} /></button></div><ProfilePhotoControl photo={profilePhoto} onFile={onProfilePhoto} id="mobile-profile-photo" /><nav aria-label="Mobile navigation">{NAV_ITEMS.map((item) => { const Icon = item.icon; return <button className={active === item.id ? "active" : ""} key={item.id} onClick={() => onNavigate(item.id)} aria-current={active === item.id ? "page" : undefined}><Icon size={21} weight={active === item.id ? "fill" : "regular"} /><span>{item.label}</span></button>; })}</nav><button type="button" className="menu-theme-toggle" onClick={onToggleDark} aria-pressed={dark}>{dark ? <Sun size={20} /> : <Moon size={20} />}<span><strong>{dark ? "Light theme" : "Dark theme"}</strong><small>Change appearance now</small></span><i aria-hidden="true" /></button><p>Private by default · stored on this device</p></aside></div>;
+  return <div className="mobile-menu-drawer" id="mobile-navigation-drawer" role="dialog" aria-modal="true" aria-label="Navigation menu"><button className="mobile-menu-backdrop" onClick={onClose} aria-label="Close navigation menu" /><aside className="mobile-menu-panel"><div className="mobile-menu-head"><div className="brand-block"><span className="brand-mark" aria-hidden="true"><Wallet weight="fill" /></span><div><strong>Pocket Ledger</strong><span>Daily Expense Tracker</span></div></div><button type="button" className="icon-button" onClick={onClose} aria-label="Close menu" autoFocus><X size={21} /></button></div><ProfilePhotoControl photo={profilePhoto} onFile={onProfilePhoto} id="mobile-profile-photo" /><nav aria-label="Mobile navigation">{NAV_ITEMS.map((item) => { const Icon = item.icon; return <button className={active === item.id ? "active" : ""} key={item.id} onClick={() => onNavigate(item.id)} aria-current={active === item.id ? "page" : undefined}><Icon size={21} weight={active === item.id ? "fill" : "regular"} /><span>{item.label}</span></button>; })}</nav><button type="button" className="menu-theme-toggle" onClick={onToggleDark} aria-pressed={dark}>{dark ? <Sun size={20} /> : <Moon size={20} />}<span><strong>{dark ? "Light theme" : "Dark theme"}</strong><small>Change appearance now</small></span><i aria-hidden="true" /></button><p>Account protected · securely synced</p></aside></div>;
 }
 
 function BudgetHero({ expenses, selectedMonth, onMonthChange, monthlyBudget, monthlyBudgets, advanceAccounts, creditAccounts }) {
@@ -258,7 +260,7 @@ function ReportsView({ expenses, aliases, onEdit }) {
 }
 
 function SettingsView({ dark, onToggleDark, onReset, installAvailable, installed, onInstall }) {
-  return <section className="module-card settings-view"><div className="pwa-install-card"><div className="pwa-icon"><Wallet size={24} weight="fill" /></div><div><strong>{installed ? "Pocket Ledger is installed" : "Install Pocket Ledger"}</strong><span>{installed ? "It can now launch from your home screen in its own app window." : installAvailable ? "Add it to this device for a standalone, offline-capable experience." : "On iPhone, use Share → Add to Home Screen. On Android, use the browser’s Install app option."}</span></div>{!installed && <button className="primary-button" type="button" onClick={onInstall}><DownloadSimple size={18} /> Install app</button>}</div><div className="setting-row"><div><strong>Dark mode</strong><span>Use a lower-light appearance.</span></div><button className={dark ? "switch active" : "switch"} onClick={onToggleDark} aria-pressed={dark}><i /></button></div><div className="settings-section"><h2>Data model</h2><p>Daily, Weekly, Monthly and One-off expenses are stored locally on this device. Monthly budget totals exclude Advance Payment and Credit Borrow entries. Merchant ledgers can be configured under Budget & Ledgers.</p></div><div className="danger-zone"><div><strong>Reset demo data</strong><span>Restore the original sample expenses, monthly budget and merchant ledgers.</span></div><button className="danger-button" onClick={onReset}><ArrowsClockwise size={17} /> Reset</button></div></section>;
+  return <section className="module-card settings-view"><div className="pwa-install-card"><div className="pwa-icon"><Wallet size={24} weight="fill" /></div><div><strong>{installed ? "Pocket Ledger is installed" : "Install Pocket Ledger"}</strong><span>{installed ? "It can now launch from your home screen in its own app window." : installAvailable ? "Add it to this device for a standalone, offline-capable experience." : "On iPhone, use Share → Add to Home Screen. On Android, use the browser’s Install app option."}</span></div>{!installed && <button className="primary-button" type="button" onClick={onInstall}><DownloadSimple size={18} /> Install app</button>}</div><div className="setting-row"><div><strong>Dark mode</strong><span>Use a lower-light appearance.</span></div><button className={dark ? "switch active" : "switch"} onClick={onToggleDark} aria-pressed={dark}><i /></button></div><div className="settings-section"><h2>Data model</h2><p>Daily, Weekly, Monthly and One-off expenses are stored in your account-backed ledger. Monthly budget totals exclude Advance Payment and Credit Borrow entries. Merchant ledgers can be configured under Budget & Ledgers.</p></div><div className="danger-zone"><div><strong>Reset demo data</strong><span>Restore the original sample expenses, monthly budget and merchant ledgers.</span></div><button className="danger-button" onClick={onReset}><ArrowsClockwise size={17} /> Reset</button></div></section>;
 }
 
 function AddExpenseDrawer({ expense, aliases, defaultFrequency, initialDate = DISPLAY_DATE, defaultStatus = "actual", requiresDisclaimers = false, monthlyBudget, monthlyBudgets, advanceAccounts, creditAccounts, allExpenses, onClose, onSave, onDelete }) {
@@ -317,8 +319,8 @@ function AddExpenseDrawer({ expense, aliases, defaultFrequency, initialDate = DI
   );
 }
 
-export function App() {
-  const [saved, setSaved] = useState(loadState);
+function LedgerApp({ initialState, user }) {
+  const [saved, setSaved] = useState(() => initialState);
   const initialParams = useMemo(() => new URLSearchParams(window.location.search), []);
   const [active, setActive] = useState(() => { const requested = initialParams.get("view") === "calendar" ? "ledger" : initialParams.get("view"); return NAV_ITEMS.some((item) => item.id === requested) ? requested : "dashboard"; });
   const [frequency, setFrequency] = useState(() => FREQUENCIES.some((item) => item.id === initialParams.get("frequency")) ? initialParams.get("frequency") : "daily");
@@ -333,7 +335,15 @@ export function App() {
   const budgetSpent = useMemo(() => expenses.filter((expense) => isDisplayMonth(expense) && isBudgetExpense(expense)).reduce((sum, expense) => sum + Number(expense.amount), 0), [expenses]);
   const currentBudget = getBudgetForMonth(saved, DISPLAY_MONTH);
 
-  useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(saved)); }, [saved]);
+  useEffect(() => {
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch("/api/state", { method: "PUT", credentials: "include", headers: { "content-type": "application/json" }, body: JSON.stringify(saved) });
+        if (!response.ok) throw new Error("Cloud save failed");
+      } catch { setToast("Could not sync changes. Check your connection."); }
+    }, 650);
+    return () => window.clearTimeout(timer);
+  }, [saved]);
   useEffect(() => { document.documentElement.dataset.theme = saved.dark ? "dark" : "light"; }, [saved.dark]);
   useEffect(() => { if (!toast) return undefined; const timer = window.setTimeout(() => setToast(""), 2600); return () => window.clearTimeout(timer); }, [toast]);
   useEffect(() => { const captureInstall = (event) => { event.preventDefault(); setInstallPrompt(event); }; const markInstalled = () => { setInstalled(true); setInstallPrompt(null); }; window.addEventListener("beforeinstallprompt", captureInstall); window.addEventListener("appinstalled", markInstalled); return () => { window.removeEventListener("beforeinstallprompt", captureInstall); window.removeEventListener("appinstalled", markInstalled); }; }, []);
@@ -350,7 +360,7 @@ export function App() {
     try {
       const profilePhoto = await prepareProfilePhoto(file);
       setSaved((current) => ({ ...current, profilePhoto }));
-      setToast("Profile picture updated privately on this device");
+      setToast("Profile picture updated and securely synced");
     } catch (error) {
       setToast(error instanceof Error ? error.message : "Could not use that image");
     }
@@ -365,9 +375,47 @@ export function App() {
   else if (active === "budget") view = <BudgetView monthlyBudget={saved.monthlyBudget} monthlyBudgets={saved.monthlyBudgets} expenses={expenses} advanceAccounts={saved.advanceAccounts} creditAccounts={saved.creditAccounts} onBudgetChange={(monthKey, monthlyBudget) => { setSaved((current) => withBudgetForMonth(current, monthKey, monthlyBudget)); setToast(`${monthLabel(monthKey)} budget saved`); }} onAccountChange={updateAccount} />;
   else if (active === "categories") view = <CategoriesView expenses={expenses} frequency={frequency} />;
   else if (active === "reports") view = <ReportsView expenses={expenses} aliases={aliases} onEdit={(expense) => openEdit(expense)} />;
-  else if (active === "settings") view = <SettingsView dark={saved.dark} onToggleDark={toggleDark} onReset={reset} installAvailable={Boolean(installPrompt)} installed={installed} onInstall={installApp} />;
+  else if (active === "settings") view = <><SettingsView dark={saved.dark} onToggleDark={toggleDark} onReset={reset} installAvailable={Boolean(installPrompt)} installed={installed} onInstall={installApp} /><section className="module-card account-session-card"><div><strong>Signed in as {user.email}</strong><span>Your database-backed ledger is synced to this account.</span></div><button className="secondary-button" type="button" onClick={() => authClient.signOut()}>Sign out</button></section></>;
   else view = <Dashboard expenses={expenses} aliases={aliases} frequency={frequency} monthlyBudget={saved.monthlyBudget} monthlyBudgets={saved.monthlyBudgets} advanceAccounts={saved.advanceAccounts} creditAccounts={saved.creditAccounts} onEdit={(expense) => openEdit(expense)} onViewAll={() => setActive("transactions")} />;
 
   const showFrequencyTabs = ["dashboard", "transactions", "categories"].includes(active);
   return <div className="app-shell"><Sidebar active={active} onNavigate={navigate} dark={saved.dark} onToggleDark={toggleDark} budgetSpent={budgetSpent} monthlyBudget={currentBudget} profilePhoto={saved.profilePhoto} onProfilePhoto={updateProfilePhoto} />{mobileMenu && <MobileMenuDrawer active={active} onNavigate={navigate} onClose={() => setMobileMenu(false)} dark={saved.dark} onToggleDark={toggleDark} profilePhoto={saved.profilePhoto} onProfilePhoto={updateProfilePhoto} />}<main className="main-content"><Header active={active} onAdd={openNew} onToggleMenu={() => setMobileMenu(true)} menuOpen={mobileMenu} />{showFrequencyTabs && <FrequencyTabs value={frequency} onChange={setFrequency} />}{view}</main><MobileNav active={active} onNavigate={navigate} />{drawer.open && <AddExpenseDrawer key={drawer.expense?.id || `new-${frequency}-${drawer.initialDate}`} expense={drawer.expense} aliases={aliases} defaultFrequency={frequency} initialDate={drawer.initialDate} defaultStatus={drawer.defaultStatus} requiresDisclaimers={drawer.requiresDisclaimers} monthlyBudget={saved.monthlyBudget} monthlyBudgets={saved.monthlyBudgets} advanceAccounts={saved.advanceAccounts} creditAccounts={saved.creditAccounts} allExpenses={expenses} onClose={closeDrawer} onSave={saveExpense} onDelete={deleteExpense} />}{toast && <div className="toast" role="status"><Check size={18} weight="bold" /> {toast}</div>}</div>;
+}
+
+export function App() {
+  if (window.location.pathname.endsWith("/reset-password")) return <ResetPasswordScreen />;
+  const session = authClient.useSession();
+  const [ledger, setLedger] = useState(null);
+  const [localState] = useState(loadState);
+  const [needsChoice, setNeedsChoice] = useState(false);
+  const [setupBusy, setSetupBusy] = useState(false);
+  const [setupMessage, setSetupMessage] = useState("");
+
+  useEffect(() => {
+    if (!session.data?.user?.id) { setLedger(null); setNeedsChoice(false); return; }
+    let active = true;
+    fetch("/api/state", { credentials: "include" }).then(async (response) => {
+      if (!response.ok) throw new Error("Could not open your ledger.");
+      return response.json();
+    }).then((result) => { if (active) { if (result.hasData) setLedger(result.state); else setNeedsChoice(true); } }).catch((error) => { if (active) setSetupMessage(error.message); });
+    return () => { active = false; };
+  }, [session.data?.user?.id]);
+
+  const chooseStart = async (mode) => {
+    setSetupBusy(true); setSetupMessage("");
+    try {
+      const response = await fetch(mode === "import" ? "/api/state/import" : "/api/state/start-fresh", { method: "POST", credentials: "include", headers: { "content-type": "application/json" }, body: mode === "import" ? JSON.stringify(localState) : undefined });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Setup could not be completed.");
+      if (mode === "import") localStorage.removeItem(STORAGE_KEY);
+      setLedger(result.state); setNeedsChoice(false);
+    } catch (error) { setSetupMessage(error instanceof Error ? error.message : "Setup could not be completed."); }
+    finally { setSetupBusy(false); }
+  };
+
+  if (session.isPending) return <main className="app-loading"><span className="brand-mark"><Wallet weight="fill" /></span><strong>Opening Pocket Ledger…</strong></main>;
+  if (!session.data?.user) return <AuthScreen />;
+  if (needsChoice) return <ImportChoice state={localState} onImport={() => chooseStart("import")} onFresh={() => chooseStart("fresh")} busy={setupBusy} message={setupMessage} />;
+  if (!ledger) return <main className="app-loading"><span className="brand-mark"><Wallet weight="fill" /></span><strong>{setupMessage || "Loading your secure ledger…"}</strong></main>;
+  return <LedgerApp key={session.data.user.id} initialState={ledger} user={session.data.user} />;
 }

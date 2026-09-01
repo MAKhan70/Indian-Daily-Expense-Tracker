@@ -1,4 +1,4 @@
-const CACHE_NAME = "pocket-ledger-shell-v4";
+const CACHE_NAME = "pocket-ledger-shell-v5";
 const scopedPath = (path = "") => new URL(path, self.registration.scope).pathname;
 const APP_SHELL = [
   scopedPath(),
@@ -28,6 +28,7 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith(scopedPath("api/"))) return;
 
   if (request.mode === "navigate") {
     event.respondWith(

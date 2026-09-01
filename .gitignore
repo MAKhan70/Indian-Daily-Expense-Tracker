@@ -1,5 +1,11 @@
 node_modules/
 dist/
+server/generated/
+prisma/*.db
+prisma/*.db-journal
+dev.db
+dev.db-journal
+.env
 *.log
 .DS_Store
 Thumbs.db

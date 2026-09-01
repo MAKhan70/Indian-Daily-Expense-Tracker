@@ -25,4 +25,5 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Ledger-originated edits require three explicit acknowledgements: the active value is replaced, the prior value is archived, and dependent totals recalculate.
 - Preserve prior values as read-only, timestamped Archived snapshots whenever an expense is edited or deleted.
 - Ship Pocket Ledger as an installable HTTPS PWA with standalone display metadata, 192px/512px/maskable/Apple icons, an offline application shell, and an in-app install entry point.
-- Treat browser-local data as device-local unless a separately authorized synchronization backend is added; do not imply that PWA installation synchronizes devices.
+- Prisma and account-backed synchronization are now authorized. Keep every finance query scoped by authenticated user ID, retain the one-time guarded local import, and never cache `/api` responses in the service worker.
+- Keep the frontend and Better Auth API on the same production origin so mobile browsers can use secure first-party session cookies reliably.

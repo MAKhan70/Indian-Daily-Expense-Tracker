@@ -38,4 +38,5 @@ test("links the manifest and registers an offline application shell", async () =
   assert.match(main, /serviceWorker\.register\(new URL\("sw\.js", document\.baseURI\)\)/);
   assert.match(serviceWorker, /request\.mode === "navigate"/);
   assert.match(serviceWorker, /caches\.match\(scopedPath\("index\.html"\)\)/);
+  assert.match(serviceWorker, /url\.pathname\.startsWith\(scopedPath\("api\/"\)\)\) return/);
 });
