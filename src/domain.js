@@ -1,7 +1,20 @@
 export const STORAGE_KEY = "pocket-ledger-v2";
 export const LEGACY_STORAGE_KEY = "pocket-ledger-v1";
-export const DISPLAY_DATE = "2026-08-31";
-export const DISPLAY_MONTH = "2026-08";
+export const INDIA_TIME_ZONE = "Asia/Kolkata";
+
+export function indiaDateKey(value = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: INDIA_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(value);
+  const dateParts = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${dateParts.year}-${dateParts.month}-${dateParts.day}`;
+}
+
+export const DISPLAY_DATE = indiaDateKey();
+export const DISPLAY_MONTH = DISPLAY_DATE.slice(0, 7);
 
 export const FREQUENCIES = [
   { id: "daily", label: "Daily", description: "Everyday essentials and routine purchases" },
@@ -34,6 +47,41 @@ export const CATEGORY_LIBRARY = {
     "Emergency Support", "Miscellaneous One-off",
   ],
 };
+
+export const CATEGORY_GROUPS = {
+  daily: [
+    { name: "Food & Groceries", subcategories: ["Groceries", "Vegetables & Fruits", "Milk & Dairy", "Breakfast", "Lunch", "Dinner", "Tea & Snacks"] },
+    { name: "Travel & Commute", subcategories: ["Local Transport", "Fuel", "Parking & Tolls"] },
+    { name: "Health & Personal", subcategories: ["Medicines", "Personal Care"] },
+    { name: "Home & Family", subcategories: ["Household Supplies", "Domestic Help", "School Daily", "Pet Care"] },
+    { name: "Work & Other", subcategories: ["Work Expense", "Miscellaneous Daily"] },
+  ],
+  weekly: [
+    { name: "Food & Household", subcategories: ["Weekly Groceries", "Farmers Market", "Meal Preparation", "Home Cleaning", "Laundry & Dry Cleaning"] },
+    { name: "Family & Leisure", subcategories: ["Family Dining", "Family Outing", "Kids Allowance", "Sports & Fitness", "Hobbies"] },
+    { name: "Travel & Care", subcategories: ["Vehicle Upkeep", "Weekly Commute", "Caregiver"] },
+    { name: "Community & Other", subcategories: ["Religious & Community", "Miscellaneous Weekly"] },
+  ],
+  monthly: [
+    { name: "Home & Utilities", subcategories: ["Rent", "Home Loan EMI", "Society Maintenance", "Electricity", "Water", "LPG / Gas", "Domestic Help Salary"] },
+    { name: "Connectivity & Subscriptions", subcategories: ["Mobile Bill", "Broadband", "DTH / Streaming", "Subscriptions"] },
+    { name: "Education & Family", subcategories: ["School Fees", "Tuition", "Monthly Groceries", "Fuel Budget"] },
+    { name: "Finance & Protection", subcategories: ["Insurance", "Loan EMI", "Taxes", "Investments"] },
+    { name: "Health & Professional", subcategories: ["Medical Care", "Professional Fees", "Miscellaneous Monthly"] },
+  ],
+  "one-off": [
+    { name: "Home & Assets", subcategories: ["Appliances", "Furniture", "Electronics", "Home Repair", "Home Renovation", "Large Purchase"] },
+    { name: "Travel & Transport", subcategories: ["Travel & Holiday", "Vehicle Repair", "Vehicle Purchase", "Relocation"] },
+    { name: "Life Events", subcategories: ["Festival", "Gifts", "Wedding & Events", "Education Admission", "Jewellery"] },
+    { name: "Health & Support", subcategories: ["Medical Emergency", "Emergency Support", "Donation"] },
+    { name: "Legal & Other", subcategories: ["Legal Fees", "Miscellaneous One-off"] },
+  ],
+};
+
+export function categoryGroupFor(frequency, subcategory) {
+  const groups = CATEGORY_GROUPS[frequency] || CATEGORY_GROUPS.daily;
+  return groups.find((group) => group.subcategories.includes(subcategory))?.name || groups[0].name;
+}
 
 export const PAYMENT_GROUPS = [
   {
@@ -86,11 +134,11 @@ export const DEFAULT_CREDITS = Array.from({ length: 5 }, (_, index) => ({
 }));
 
 export const SEED_EXPENSES = [
-  { id: "seed-1", name: "Vegetables & fruits", merchant: "D Mart", amount: 620, category: "Vegetables & Fruits", frequency: "daily", payment: "upi", date: DISPLAY_DATE, time: "09:42", color: "sage" },
-  { id: "seed-2", name: "Lunch", merchant: "Swiggy", amount: 280, category: "Lunch", frequency: "daily", payment: "upi", date: DISPLAY_DATE, time: "13:15", color: "turmeric" },
-  { id: "seed-3", name: "Auto", merchant: "Office commute", amount: 120, category: "Local Transport", frequency: "daily", payment: "cash", date: DISPLAY_DATE, time: "08:55", color: "plum" },
+  { id: "seed-1", name: "Vegetables & fruits", merchant: "D Mart", amount: 620, category: "Vegetables & Fruits", frequency: "daily", payment: "upi", date: "2026-08-31", time: "09:42", color: "sage" },
+  { id: "seed-2", name: "Lunch", merchant: "Swiggy", amount: 280, category: "Lunch", frequency: "daily", payment: "upi", date: "2026-08-31", time: "13:15", color: "turmeric" },
+  { id: "seed-3", name: "Auto", merchant: "Office commute", amount: 120, category: "Local Transport", frequency: "daily", payment: "cash", date: "2026-08-31", time: "08:55", color: "plum" },
   { id: "seed-4", name: "Electricity bill", merchant: "BESCOM", amount: 1950, category: "Electricity", frequency: "monthly", payment: "net-banking", date: "2026-08-28", time: "19:31", color: "violet" },
-  { id: "seed-5", name: "Medicines", merchant: "Neighbourhood Pharmacy", amount: 1199, category: "Medicines", frequency: "daily", payment: "credit-1", date: DISPLAY_DATE, time: "16:20", color: "rose" },
+  { id: "seed-5", name: "Medicines", merchant: "Neighbourhood Pharmacy", amount: 1199, category: "Medicines", frequency: "daily", payment: "credit-1", date: "2026-08-31", time: "16:20", color: "rose" },
   { id: "seed-6", name: "Festival sweets advance", merchant: "Fresh Basket Store", amount: 1800, category: "Festival", frequency: "one-off", payment: "advance-1", date: "2026-08-30", time: "18:10", color: "blue" },
   { id: "seed-7", name: "Weekly groceries", merchant: "Reliance Fresh", amount: 2450, category: "Weekly Groceries", frequency: "weekly", payment: "debit-card", date: "2026-08-29", time: "11:10", color: "sage" },
   { id: "seed-8", name: "Monthly broadband", merchant: "Airtel Xstream", amount: 999, category: "Broadband", frequency: "monthly", payment: "auto-debit", date: "2026-08-05", time: "07:30", color: "blue" },
@@ -152,10 +200,18 @@ export function withBudgetForMonth(state, monthKey, amount) {
 
 export function normalizeExpense(expense) {
   const frequency = FREQUENCIES.some((item) => item.id === expense.frequency) ? expense.frequency : "daily";
+  const category = CATEGORY_LIBRARY[frequency].includes(expense.subcategory || expense.category)
+    ? (expense.subcategory || expense.category)
+    : CATEGORY_LIBRARY[frequency][0];
+  const categoryGroup = CATEGORY_GROUPS[frequency].some((group) => group.name === expense.categoryGroup && group.subcategories.includes(category))
+    ? expense.categoryGroup
+    : categoryGroupFor(frequency, category);
   return {
     ...expense,
     frequency,
-    category: expense.category || CATEGORY_LIBRARY[frequency][0],
+    category,
+    subcategory: category,
+    categoryGroup,
     status: expense.status === "planned" ? "planned" : "actual",
     planNote: expense.planNote || "",
     reminder: ["month", "week", "both", "none"].includes(expense.reminder) ? expense.reminder : "both",

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   CATEGORY_LIBRARY,
+  CATEGORY_GROUPS,
   DEFAULT_ADVANCES,
   DEFAULT_CREDITS,
   PAYMENT_GROUPS,
@@ -9,12 +10,12 @@ import {
   createDefaultState,
   deleteExpenseWithArchive,
   isBudgetExpense,
+  indiaDateKey,
   expensesForMonth,
   getBudgetForMonth,
   monthLabel,
   shiftMonthKey,
   withBudgetForMonth,
-  isDisplayMonth,
   isPlannedExpense,
   upsertExpenseWithArchive,
 } from "../src/domain.js";
@@ -24,6 +25,9 @@ test("provides broad category libraries for every expense frequency", () => {
   for (const categories of Object.values(CATEGORY_LIBRARY)) {
     assert.ok(categories.length >= 15);
     assert.equal(new Set(categories).size, categories.length);
+  }
+  for (const frequency of Object.keys(CATEGORY_LIBRARY)) {
+    assert.deepEqual(CATEGORY_GROUPS[frequency].flatMap((group) => group.subcategories).sort(), [...CATEGORY_LIBRARY[frequency]].sort());
   }
 });
 
@@ -53,7 +57,7 @@ test("provides five configurable advance and five credit payment methods", () =>
 });
 
 test("excludes advance and credit activity from the monthly budget", () => {
-  const monthlyExpenses = SEED_EXPENSES.filter(isDisplayMonth);
+  const monthlyExpenses = expensesForMonth(SEED_EXPENSES, "2026-08");
   const budgetSpend = monthlyExpenses.filter(isBudgetExpense).reduce((sum, expense) => sum + expense.amount, 0);
   const excludedSpend = monthlyExpenses.filter((expense) => !isBudgetExpense(expense)).reduce((sum, expense) => sum + expense.amount, 0);
 
@@ -64,6 +68,11 @@ test("excludes advance and credit activity from the monthly budget", () => {
   assert.equal(isBudgetExpense({ payment: "credit-5" }), false);
 });
 
+test("uses the current calendar date in India instead of a fixed demo date", () => {
+  assert.equal(indiaDateKey(new Date("2026-08-31T19:00:00.000Z")), "2026-09-01");
+  assert.equal(indiaDateKey(new Date("2026-08-31T18:29:59.000Z")), "2026-08-31");
+});
+
 test("creates a complete editable default budget and ledger state", () => {
   const state = createDefaultState();
   assert.equal(state.monthlyBudget, 50000);
@@ -71,6 +80,7 @@ test("creates a complete editable default budget and ledger state", () => {
   assert.equal(state.creditAccounts.length, 5);
   assert.deepEqual(state.archivedExpenses, []);
   assert.ok(state.expenses.every((expense) => CATEGORY_LIBRARY[expense.frequency].includes(expense.category)));
+  assert.ok(state.expenses.every((expense) => CATEGORY_GROUPS[expense.frequency].some((group) => group.name === expense.categoryGroup && group.subcategories.includes(expense.subcategory))));
   const planned = state.expenses.filter(isPlannedExpense);
   assert.equal(planned.length, 1);
   assert.equal(planned[0].reminder, "both");
