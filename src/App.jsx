@@ -1,19 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  ArrowsClockwise, Bank, CalendarBlank, ChartBar, ChartDonut,
+  ArrowsClockwise, Bank, CalendarBlank, CaretLeft, CaretRight, ChartBar, ChartDonut,
   Check, CreditCard, DownloadSimple, GearSix, HandCoins, House, MagnifyingGlass,
   Moon, PencilSimple, Plus, Receipt, ShoppingBag, SlidersHorizontal, Tag, Trash,
   TrendDown, Wallet, X,
 } from "@phosphor-icons/react";
-import { PolarAngleAxis, RadialBar, RadialBarChart, ResponsiveContainer } from "recharts";
+import {
+  Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart,
+  PolarAngleAxis, RadialBar, RadialBarChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
+} from "recharts";
 import "@fontsource/dm-sans/400.css";
 import "@fontsource/dm-sans/500.css";
 import "@fontsource/dm-sans/600.css";
 import "@fontsource/playfair-display/600.css";
 import {
   buildAliases, CATEGORY_LIBRARY, createDefaultState, deleteExpenseWithArchive, DISPLAY_DATE, DISPLAY_MONTH,
-  formatINR, FREQUENCIES, isAdvancePayment, isBudgetExpense, isCreditBorrow,
-  isDisplayMonth, loadState, PAYMENT_GROUPS, STORAGE_KEY, titleCaseDate, upsertExpenseWithArchive,
+  expensesForMonth, formatINR, FREQUENCIES, getBudgetForMonth, isAdvancePayment, isBudgetExpense, isCreditBorrow,
+  isDisplayMonth, loadState, monthLabel, PAYMENT_GROUPS, shiftMonthKey, STORAGE_KEY, titleCaseDate,
+  upsertExpenseWithArchive, withBudgetForMonth,
 } from "./domain.js";
 import { LedgerView } from "./LedgerView.jsx";
 
@@ -28,6 +32,7 @@ const NAV_ITEMS = [
 ];
 
 const FREQUENCY_LABELS = Object.fromEntries(FREQUENCIES.map((item) => [item.id, item.label]));
+const CHART_COLORS = ["#648955", "#d2a533", "#b96f52", "#77518c", "#5f7f8f", "#9b687a", "#78834b", "#a86646"];
 
 function paymentIcon(id) {
   if (String(id).includes("card") || isCreditBorrow(id)) return CreditCard;
@@ -51,6 +56,19 @@ function FrequencyTabs({ value, onChange, includeAll = false, label = "Expense f
       ))}
     </nav>
   );
+}
+
+function MonthNavigator({ value, onChange, label }) {
+  return <div className="month-navigator" role="group" aria-label={label}><button type="button" className="icon-button" onClick={() => onChange(shiftMonthKey(value, -1))} aria-label="Previous month"><CaretLeft /></button><label><span className="visually-hidden">Choose month</span><input type="month" value={value} min="2000-01" max="2100-12" onChange={(event) => onChange(event.target.value || value)} /></label><button type="button" className="icon-button" onClick={() => onChange(shiftMonthKey(value, 1))} aria-label="Next month"><CaretRight /></button></div>;
+}
+
+function AccessibleDataTable({ caption, columns, rows }) {
+  return <table className="visually-hidden"><caption>{caption}</caption><thead><tr>{columns.map((column) => <th scope="col" key={column}>{column}</th>)}</tr></thead><tbody>{rows.map((row, index) => <tr key={`${caption}-${index}`}>{row.map((cell, cellIndex) => <td key={`${caption}-${index}-${cellIndex}`}>{cell}</td>)}</tr>)}</tbody></table>;
+}
+
+function CurrencyTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return <div className="chart-tooltip"><strong>{label}</strong>{payload.map((item) => <span key={item.dataKey}>{item.name}: {formatINR(item.value)}</span>)}</div>;
 }
 
 function Sidebar({ active, onNavigate, dark, onToggleDark, budgetSpent, monthlyBudget }) {
@@ -118,13 +136,37 @@ function AccountCard({ account, kind, used, onChange }) {
   return <article className={`ledger-card ${prefix}`}><div className="ledger-title"><span className="ledger-icon">{isAdvance ? <HandCoins size={20} /> : <CreditCard size={20} />}</span><div><strong>{account.label}</strong><small>{isAdvance ? "Prepaid merchant balance" : "Merchant credit ceiling"}</small></div></div><div className="ledger-fields"><label htmlFor={`${prefix}-label-${account.id}`}><span>Account name</span><input id={`${prefix}-label-${account.id}`} name={`${prefix}-label-${account.id}`} value={account.label} maxLength="36" onChange={(event) => onChange({ label: event.target.value })} /></label><label htmlFor={`${prefix}-merchant-${account.id}`}><span>Merchant / shop</span><input id={`${prefix}-merchant-${account.id}`} name={`${prefix}-merchant-${account.id}`} value={account.merchant} placeholder="Add merchant name" maxLength="80" onChange={(event) => onChange({ merchant: event.target.value })} /></label><label htmlFor={`${prefix}-amount-${account.id}`}><span>{isAdvance ? "Advance paid (₹)" : "Credit limit (₹)"}</span><input id={`${prefix}-amount-${account.id}`} name={`${prefix}-amount-${account.id}`} type="number" inputMode="decimal" min="0" max="1000000000" value={capacity || ""} placeholder="0" onChange={(event) => onChange({ [isAdvance ? "amountPaid" : "creditLimit"]: Math.max(Number(event.target.value) || 0, 0) })} /></label></div><div className="ledger-balance"><span>Used <b>{formatINR(used)}</b></span><span>Available <strong>{formatINR(remaining)}</strong></span></div><progress max={Math.max(capacity, 1)} value={Math.min(used, capacity)} aria-label={`${account.label}: ${formatINR(used)} used of ${formatINR(capacity)}`} /></article>;
 }
 
-function BudgetView({ monthlyBudget, budgetSpent, expenses, advanceAccounts, creditAccounts, onBudgetChange, onAccountChange }) {
-  const [budgetDraft, setBudgetDraft] = useState(String(monthlyBudget));
-  useEffect(() => setBudgetDraft(String(monthlyBudget)), [monthlyBudget]);
-  const percent = monthlyBudget > 0 ? Math.min(Math.round((budgetSpent / monthlyBudget) * 100), 100) : 0;
-  const usage = (id) => expenses.filter((expense) => expense.payment === id).reduce((sum, expense) => sum + Number(expense.amount), 0);
-  const submitBudget = (event) => { event.preventDefault(); onBudgetChange(Math.max(Number(budgetDraft) || 0, 0)); };
-  return <div className="budget-stack"><section className="module-card budget-view budget-summary"><div className="module-intro"><div><h2>Monthly budget</h2><p>All Daily, Weekly, Monthly and One-off spending is included, except Advance and Credit.</p></div><strong>{percent}%</strong></div><progress max="100" value={percent} className="master-progress" /><div className="budget-kpis"><div><span>Budget</span><strong>{formatINR(monthlyBudget)}</strong></div><div><span>Budget spend</span><strong>{formatINR(budgetSpent)}</strong></div><div><span>Remaining</span><strong className="positive">{formatINR(Math.max(monthlyBudget - budgetSpent, 0))}</strong></div></div><form className="budget-form" action="#" onSubmit={submitBudget}><label htmlFor="monthly-budget"><span>Monthly budget amount (₹)</span><input id="monthly-budget" name="monthly-budget" type="number" inputMode="decimal" min="0" max="1000000000" value={budgetDraft} onChange={(event) => setBudgetDraft(event.target.value)} required /></label><button className="primary-button" type="submit">Save budget</button></form></section><section className="module-card ledger-section"><div className="section-heading"><div><h2>Advance Payment 1–5</h2><small>Add each merchant and the advance amount already paid.</small></div><span className="outside-budget">Outside monthly budget</span></div><div className="ledger-grid">{advanceAccounts.map((account) => <AccountCard key={account.id} account={account} kind="advance" used={usage(account.id)} onChange={(accountPatch) => onAccountChange("advance", account.id, accountPatch)} />)}</div></section><section className="module-card ledger-section"><div className="section-heading"><div><h2>Credit Borrow 1–5</h2><small>Add each merchant and set the maximum credit you allow.</small></div><span className="outside-budget">Outside monthly budget</span></div><div className="ledger-grid">{creditAccounts.map((account) => <AccountCard key={account.id} account={account} kind="credit" used={usage(account.id)} onChange={(accountPatch) => onAccountChange("credit", account.id, accountPatch)} />)}</div></section></div>;
+function BudgetView({ monthlyBudget, monthlyBudgets, expenses, advanceAccounts, creditAccounts, onBudgetChange, onAccountChange }) {
+  const [selectedMonth, setSelectedMonth] = useState(DISPLAY_MONTH);
+  const selectedBudget = getBudgetForMonth({ monthlyBudget, monthlyBudgets }, selectedMonth);
+  const [budgetDraft, setBudgetDraft] = useState(String(selectedBudget));
+  const monthExpenses = expensesForMonth(expenses, selectedMonth);
+  const budgetSpent = monthExpenses.filter(isBudgetExpense).reduce((sum, expense) => sum + Number(expense.amount), 0);
+  const advanceUsed = monthExpenses.filter((expense) => isAdvancePayment(expense.payment)).reduce((sum, expense) => sum + Number(expense.amount), 0);
+  const creditUsed = monthExpenses.filter((expense) => isCreditBorrow(expense.payment)).reduce((sum, expense) => sum + Number(expense.amount), 0);
+  const advanceCapacity = advanceAccounts.reduce((sum, account) => sum + (Number(account.amountPaid) || 0), 0);
+  const creditCapacity = creditAccounts.reduce((sum, account) => sum + (Number(account.creditLimit) || 0), 0);
+  const percent = selectedBudget > 0 ? Math.min(Math.round((budgetSpent / selectedBudget) * 100), 100) : 0;
+  const lifetimeUsage = (id) => expenses.filter((expense) => expense.payment === id).reduce((sum, expense) => sum + Number(expense.amount), 0);
+
+  useEffect(() => setBudgetDraft(String(selectedBudget)), [selectedBudget, selectedMonth]);
+  const submitBudget = (event) => { event.preventDefault(); onBudgetChange(selectedMonth, Math.max(Number(budgetDraft) || 0, 0)); };
+
+  return <div className="budget-stack">
+    <section className="module-card budget-view budget-summary">
+      <div className="report-head"><div><span className="eyebrow">Budget history</span><h2>{monthLabel(selectedMonth)} budget</h2><p>Review any month without changing the ledger records underneath it.</p></div><MonthNavigator value={selectedMonth} onChange={setSelectedMonth} label="Budget month" /></div>
+      <div className="module-intro budget-progress-head"><div><p>Daily, Weekly, Monthly and One-off spending counts toward this budget. Advance and Credit usage is shown separately.</p></div><strong>{percent}%</strong></div>
+      <progress max="100" value={percent} className="master-progress" aria-label={`${percent}% of ${monthLabel(selectedMonth)} budget used`} />
+      <div className="budget-kpis"><div><span>Budget</span><strong>{formatINR(selectedBudget)}</strong></div><div><span>Budget spend</span><strong>{formatINR(budgetSpent)}</strong></div><div><span>Remaining</span><strong className="positive">{formatINR(Math.max(selectedBudget - budgetSpent, 0))}</strong></div></div>
+      {(advanceCapacity > 0 || advanceUsed > 0 || creditCapacity > 0 || creditUsed > 0) && <div className="special-usage-grid">
+        {(advanceCapacity > 0 || advanceUsed > 0) && <article className="special-usage advance"><span><HandCoins size={20} /> Advance usage</span><strong>{formatINR(advanceUsed)}</strong><small>used in {monthLabel(selectedMonth)} · {formatINR(advanceCapacity)} prepaid</small><progress max={Math.max(advanceCapacity, advanceUsed, 1)} value={advanceUsed} aria-label={`Advance usage ${formatINR(advanceUsed)} of ${formatINR(advanceCapacity)}`} /></article>}
+        {(creditCapacity > 0 || creditUsed > 0) && <article className="special-usage credit"><span><CreditCard size={20} /> Credit usage</span><strong>{formatINR(creditUsed)}</strong><small>borrowed in {monthLabel(selectedMonth)} · {formatINR(creditCapacity)} limit</small><progress max={Math.max(creditCapacity, creditUsed, 1)} value={creditUsed} aria-label={`Credit usage ${formatINR(creditUsed)} of ${formatINR(creditCapacity)}`} /></article>}
+      </div>}
+      <form className="budget-form" action="#" onSubmit={submitBudget}><label htmlFor="monthly-budget"><span>{monthLabel(selectedMonth)} budget amount (₹)</span><input id="monthly-budget" name="monthly-budget" type="number" inputMode="decimal" min="0" max="1000000000" value={budgetDraft} onChange={(event) => setBudgetDraft(event.target.value)} required /></label><button className="primary-button" type="submit">Save budget</button></form>
+    </section>
+    <section className="module-card ledger-section"><div className="section-heading"><div><h2>Advance Payment 1–5</h2><small>Add each merchant and the advance amount already paid.</small></div><span className="outside-budget">Outside monthly budget</span></div><div className="ledger-grid">{advanceAccounts.map((account) => <AccountCard key={account.id} account={account} kind="advance" used={lifetimeUsage(account.id)} onChange={(accountPatch) => onAccountChange("advance", account.id, accountPatch)} />)}</div></section>
+    <section className="module-card ledger-section"><div className="section-heading"><div><h2>Credit Borrow 1–5</h2><small>Add each merchant and set the maximum credit you allow.</small></div><span className="outside-budget">Outside monthly budget</span></div><div className="ledger-grid">{creditAccounts.map((account) => <AccountCard key={account.id} account={account} kind="credit" used={lifetimeUsage(account.id)} onChange={(accountPatch) => onAccountChange("credit", account.id, accountPatch)} />)}</div></section>
+  </div>;
 }
 
 function CategoriesView({ expenses, frequency }) {
@@ -134,9 +176,11 @@ function CategoriesView({ expenses, frequency }) {
 }
 
 function ReportsView({ expenses, aliases, onEdit }) {
+  const [selectedMonth, setSelectedMonth] = useState(DISPLAY_MONTH);
   const [frequency, setFrequency] = useState("all");
   const [selectedMethod, setSelectedMethod] = useState(null);
-  const scoped = expenses.filter((expense) => frequency === "all" || expense.frequency === frequency);
+  const monthExpenses = expensesForMonth(expenses, selectedMonth);
+  const scoped = monthExpenses.filter((expense) => frequency === "all" || expense.frequency === frequency);
   const total = scoped.reduce((sum, expense) => sum + Number(expense.amount), 0);
   const budgetTotal = scoped.filter(isBudgetExpense).reduce((sum, expense) => sum + Number(expense.amount), 0);
   const specialTotal = total - budgetTotal;
@@ -144,8 +188,39 @@ function ReportsView({ expenses, aliases, onEdit }) {
   const activeMethod = selectedMethod && methodRows.some((row) => row.id === selectedMethod) ? selectedMethod : methodRows[0]?.id;
   const drilldown = scoped.filter((expense) => expense.payment === activeMethod);
   const selectedRow = methodRows.find((row) => row.id === activeMethod);
-  const exportCsv = () => { const safe = (value) => { const text = String(value ?? "").replaceAll('"', '""'); return /^[=+\-@]/.test(text) ? `'${text}` : text; }; const rows = [["Date", "Frequency", "Expense", "Merchant", "Category", "Payment", "Budget treatment", "Amount"], ...scoped.map((e) => [e.date, FREQUENCY_LABELS[e.frequency], e.name, e.merchant, e.category, aliases[e.payment], paymentClass(e.payment), e.amount])]; const csv = rows.map((row) => row.map((cell) => `"${safe(cell)}"`).join(",")).join("\n"); const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })); const link = document.createElement("a"); link.href = url; link.download = "pocket-ledger-analysis.csv"; link.click(); URL.revokeObjectURL(url); };
-  return <div className="analytics-stack"><section className="module-card reports-view"><div className="report-head"><div><h2>Payment mode analysis</h2><p>Drill down from each payment method to its underlying expenses.</p></div><button className="secondary-button" onClick={exportCsv}><DownloadSimple size={18} /> Export CSV</button></div><FrequencyTabs value={frequency} onChange={(nextFrequency) => { setFrequency(nextFrequency); setSelectedMethod(null); }} includeAll label="Analytics frequency" /><div className="report-stats"><div><span>Total analysed</span><strong>{formatINR(total)}</strong></div><div><span>Monthly-budget spend</span><strong>{formatINR(budgetTotal)}</strong></div><div><span>Advance + Credit</span><strong>{formatINR(specialTotal)}</strong></div></div><div className="analytics-grid"><div className="method-analysis"><div className="analysis-table-head"><span>Payment mode</span><span>Transactions</span><span>Share</span><span>Total</span></div>{methodRows.map((row) => { const Icon = paymentIcon(row.id); return <button key={row.id} className={activeMethod === row.id ? "method-row active" : "method-row"} onClick={() => setSelectedMethod(row.id)}><span><Icon size={18} /> <b>{aliases[row.id]}</b><small>{paymentClass(row.id)}</small></span><span>{row.count}</span><span>{row.share}%</span><strong>{formatINR(row.total)}</strong><i style={{ "--share": `${row.share}%` }} /></button>; })}</div><div className="drilldown-panel"><div><span>Selected payment mode</span><h3>{aliases[activeMethod] || "No activity"}</h3>{selectedRow && <p>{selectedRow.count} transactions · {selectedRow.share}% of analysed spend</p>}</div><TransactionList expenses={drilldown} aliases={aliases} onEdit={onEdit} /></div></div></section></div>;
+  const previousMonth = shiftMonthKey(selectedMonth, -1);
+  const previousTotal = expensesForMonth(expenses, previousMonth).filter((expense) => frequency === "all" || expense.frequency === frequency).reduce((sum, expense) => sum + Number(expense.amount), 0);
+  const monthChange = previousTotal > 0 ? Math.round(((total - previousTotal) / previousTotal) * 100) : null;
+  const rawPieData = methodRows.map((row) => ({ name: aliases[row.id] || row.id, value: row.total }));
+  const pieData = rawPieData.length > 6 ? [...rawPieData.slice(0, 5), { name: "Other methods", value: rawPieData.slice(5).reduce((sum, item) => sum + item.value, 0) }] : rawPieData;
+  const categoryData = Object.values(scoped.reduce((groups, expense) => { groups[expense.category] = { name: expense.category, amount: (groups[expense.category]?.amount || 0) + Number(expense.amount) }; return groups; }, {})).sort((a, b) => b.amount - a.amount).slice(0, 8);
+  const [selectedYear, selectedMonthNumber] = selectedMonth.split("-").map(Number);
+  const daysInMonth = new Date(selectedYear, selectedMonthNumber, 0).getDate();
+  const trendData = Array.from({ length: daysInMonth }, (_, index) => {
+    const day = String(index + 1).padStart(2, "0");
+    const daily = scoped.filter((expense) => expense.date === `${selectedMonth}-${day}`);
+    return {
+      day: index + 1,
+      "Budget spend": daily.filter(isBudgetExpense).reduce((sum, expense) => sum + Number(expense.amount), 0),
+      "Advance + Credit": daily.filter((expense) => !isBudgetExpense(expense)).reduce((sum, expense) => sum + Number(expense.amount), 0),
+    };
+  });
+  const hasTrend = trendData.some((item) => item["Budget spend"] || item["Advance + Credit"]);
+  const exportCsv = () => { const safe = (value) => { const text = String(value ?? "").replaceAll('"', '""'); return /^[=+\-@]/.test(text) ? `'${text}` : text; }; const rows = [["Date", "Frequency", "Expense", "Merchant", "Category", "Payment", "Budget treatment", "Amount"], ...scoped.map((e) => [e.date, FREQUENCY_LABELS[e.frequency], e.name, e.merchant, e.category, aliases[e.payment], paymentClass(e.payment), e.amount])]; const csv = rows.map((row) => row.map((cell) => `"${safe(cell)}"`).join(",")).join("\n"); const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })); const link = document.createElement("a"); link.href = url; link.download = `pocket-ledger-${selectedMonth}-analysis.csv`; link.click(); URL.revokeObjectURL(url); };
+
+  return <div className="analytics-stack"><section className="module-card reports-view">
+    <div className="report-head"><div><span className="eyebrow">Advanced analytics</span><h2>{monthLabel(selectedMonth)} spending</h2><p>Change the month to compare historical payment, category and daily trends.</p></div><div className="report-actions"><MonthNavigator value={selectedMonth} onChange={(nextMonth) => { setSelectedMonth(nextMonth); setSelectedMethod(null); }} label="Analytics month" /><button className="secondary-button" onClick={exportCsv}><DownloadSimple size={18} /> Export CSV</button></div></div>
+    <FrequencyTabs value={frequency} onChange={(nextFrequency) => { setFrequency(nextFrequency); setSelectedMethod(null); }} includeAll label="Analytics frequency" />
+    <div className="report-stats four"><div><span>Total analysed</span><strong>{formatINR(total)}</strong></div><div><span>Budget spend</span><strong>{formatINR(budgetTotal)}</strong></div><div><span>Advance + Credit</span><strong>{formatINR(specialTotal)}</strong></div><div><span>vs {monthLabel(previousMonth)}</span><strong className={monthChange !== null && monthChange <= 0 ? "positive" : ""}>{monthChange === null ? "No baseline" : `${monthChange > 0 ? "+" : ""}${monthChange}%`}</strong></div></div>
+
+    <div className="chart-grid">
+      <article className="chart-card"><div className="chart-heading"><div><span>Pie chart</span><h3>Payment method mix</h3></div><strong>{methodRows.length} methods</strong></div>{pieData.length ? <><div className="chart-canvas" aria-hidden="true"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={pieData} dataKey="value" nameKey="name" innerRadius="48%" outerRadius="78%" paddingAngle={2} isAnimationActive={false}>{pieData.map((item, index) => <Cell key={item.name} fill={CHART_COLORS[index % CHART_COLORS.length]} />)}</Pie><Tooltip content={<CurrencyTooltip />} /></PieChart></ResponsiveContainer></div><div className="chart-legend">{pieData.map((item, index) => <span key={item.name}><i className={`chart-swatch tone-${index % CHART_COLORS.length}`} />{item.name}<b>{formatINR(item.value)}</b></span>)}</div><AccessibleDataTable caption={`${monthLabel(selectedMonth)} payment method totals`} columns={["Payment method", "Amount"]} rows={pieData.map((item) => [item.name, formatINR(item.value)])} /></> : <div className="chart-empty">No payment activity in this month.</div>}</article>
+      <article className="chart-card"><div className="chart-heading"><div><span>Bar chart</span><h3>Top spending categories</h3></div><strong>{categoryData.length} shown</strong></div>{categoryData.length ? <><div className="chart-canvas" aria-hidden="true"><ResponsiveContainer width="100%" height="100%"><BarChart data={categoryData} layout="vertical" margin={{ top: 4, right: 12, bottom: 4, left: 6 }}><CartesianGrid stroke="var(--chart-grid)" horizontal={false} /><XAxis type="number" tickFormatter={(value) => `₹${Math.round(value / 1000)}k`} tick={{ fill: "var(--muted)", fontSize: 11 }} /><YAxis type="category" dataKey="name" width={92} tick={{ fill: "var(--muted)", fontSize: 10 }} tickLine={false} axisLine={false} /><Tooltip content={<CurrencyTooltip />} /><Bar dataKey="amount" name="Spend" fill="#648955" radius={[0, 6, 6, 0]} isAnimationActive={false} /></BarChart></ResponsiveContainer></div><AccessibleDataTable caption={`${monthLabel(selectedMonth)} category totals`} columns={["Category", "Amount"]} rows={categoryData.map((item) => [item.name, formatINR(item.amount)])} /></> : <div className="chart-empty">No category activity in this month.</div>}</article>
+      <article className="chart-card trend-card"><div className="chart-heading"><div><span>Trend chart</span><h3>Daily spending movement</h3></div><div className="trend-legend"><span><i className="chart-swatch tone-0" /> Budget spend</span><span><i className="chart-swatch tone-3" /> Advance + Credit</span></div></div>{hasTrend ? <><div className="chart-canvas trend" aria-hidden="true"><ResponsiveContainer width="100%" height="100%"><LineChart data={trendData} margin={{ top: 8, right: 16, bottom: 2, left: 0 }}><CartesianGrid stroke="var(--chart-grid)" vertical={false} /><XAxis dataKey="day" tick={{ fill: "var(--muted)", fontSize: 10 }} interval={Math.max(Math.ceil(daysInMonth / 8) - 1, 0)} /><YAxis tickFormatter={(value) => `₹${Math.round(value / 1000)}k`} tick={{ fill: "var(--muted)", fontSize: 10 }} width={45} /><Tooltip content={<CurrencyTooltip />} /><Line type="monotone" dataKey="Budget spend" stroke="#648955" strokeWidth={3} dot={false} activeDot={{ r: 5 }} isAnimationActive={false} /><Line type="monotone" dataKey="Advance + Credit" stroke="#77518c" strokeWidth={3} dot={false} activeDot={{ r: 5 }} isAnimationActive={false} /></LineChart></ResponsiveContainer></div><AccessibleDataTable caption={`${monthLabel(selectedMonth)} daily spending trend`} columns={["Day", "Budget spend", "Advance and Credit"]} rows={trendData.map((item) => [item.day, formatINR(item["Budget spend"]), formatINR(item["Advance + Credit"])])} /></> : <div className="chart-empty">No daily trend is available for this month.</div>}</article>
+    </div>
+
+    <div className="analytics-grid"><div className="method-analysis"><div className="analysis-table-head"><span>Payment mode</span><span>Transactions</span><span>Share</span><span>Total</span></div>{methodRows.length ? methodRows.map((row) => { const Icon = paymentIcon(row.id); return <button key={row.id} className={activeMethod === row.id ? "method-row active" : "method-row"} onClick={() => setSelectedMethod(row.id)}><span><Icon size={18} /> <b>{aliases[row.id]}</b><small>{paymentClass(row.id)}</small></span><span>{row.count}</span><span>{row.share}%</span><strong>{formatINR(row.total)}</strong><i style={{ "--share": `${row.share}%` }} /></button>; }) : <div className="chart-empty compact">No payment methods to drill into.</div>}</div><div className="drilldown-panel"><div><span>Selected payment mode</span><h3>{aliases[activeMethod] || "No activity"}</h3>{selectedRow && <p>{selectedRow.count} transactions · {selectedRow.share}% of analysed spend</p>}</div><TransactionList expenses={drilldown} aliases={aliases} onEdit={onEdit} /></div></div>
+  </section></div>;
 }
 
 function SettingsView({ dark, onToggleDark, onReset, installAvailable, installed, onInstall }) {
@@ -218,6 +293,7 @@ export function App() {
   const expenses = useMemo(() => records.filter((record) => record.status !== "planned"), [records]);
   const aliases = useMemo(() => buildAliases(saved), [saved]);
   const budgetSpent = useMemo(() => expenses.filter((expense) => isDisplayMonth(expense) && isBudgetExpense(expense)).reduce((sum, expense) => sum + Number(expense.amount), 0), [expenses]);
+  const currentBudget = getBudgetForMonth(saved, DISPLAY_MONTH);
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(saved)); }, [saved]);
   useEffect(() => { document.documentElement.dataset.theme = saved.dark ? "dark" : "light"; }, [saved.dark]);
@@ -238,12 +314,12 @@ export function App() {
   let view;
   if (active === "transactions") view = <TransactionsView expenses={expenses} aliases={aliases} frequency={frequency} onEdit={(expense) => openEdit(expense)} onAdd={openNew} />;
   else if (active === "ledger") view = <LedgerView records={records} archives={saved.archivedExpenses || []} aliases={aliases} onEdit={(expense) => openEdit(expense, true)} onAdd={openLedgerDate} />;
-  else if (active === "budget") view = <BudgetView monthlyBudget={saved.monthlyBudget} budgetSpent={budgetSpent} expenses={expenses} advanceAccounts={saved.advanceAccounts} creditAccounts={saved.creditAccounts} onBudgetChange={(monthlyBudget) => { setSaved((current) => ({ ...current, monthlyBudget })); setToast("Monthly budget saved"); }} onAccountChange={updateAccount} />;
+  else if (active === "budget") view = <BudgetView monthlyBudget={saved.monthlyBudget} monthlyBudgets={saved.monthlyBudgets} expenses={expenses} advanceAccounts={saved.advanceAccounts} creditAccounts={saved.creditAccounts} onBudgetChange={(monthKey, monthlyBudget) => { setSaved((current) => withBudgetForMonth(current, monthKey, monthlyBudget)); setToast(`${monthLabel(monthKey)} budget saved`); }} onAccountChange={updateAccount} />;
   else if (active === "categories") view = <CategoriesView expenses={expenses} frequency={frequency} />;
   else if (active === "reports") view = <ReportsView expenses={expenses} aliases={aliases} onEdit={(expense) => openEdit(expense)} />;
   else if (active === "settings") view = <SettingsView dark={saved.dark} onToggleDark={() => setSaved((current) => ({ ...current, dark: !current.dark }))} onReset={reset} installAvailable={Boolean(installPrompt)} installed={installed} onInstall={installApp} />;
-  else view = <Dashboard expenses={expenses} aliases={aliases} frequency={frequency} monthlyBudget={saved.monthlyBudget} budgetSpent={budgetSpent} onEdit={(expense) => openEdit(expense)} onViewAll={() => setActive("transactions")} />;
+  else view = <Dashboard expenses={expenses} aliases={aliases} frequency={frequency} monthlyBudget={currentBudget} budgetSpent={budgetSpent} onEdit={(expense) => openEdit(expense)} onViewAll={() => setActive("transactions")} />;
 
   const showFrequencyTabs = ["dashboard", "transactions", "categories"].includes(active);
-  return <div className="app-shell"><Sidebar active={active} onNavigate={navigate} dark={saved.dark} onToggleDark={() => setSaved((current) => ({ ...current, dark: !current.dark }))} budgetSpent={budgetSpent} monthlyBudget={saved.monthlyBudget} />{mobileMenu && <div className="mobile-menu-sheet"><button className="drawer-backdrop" onClick={() => setMobileMenu(false)} aria-label="Close navigation" /><div>{NAV_ITEMS.map((item) => { const Icon = item.icon; return <button key={item.id} onClick={() => navigate(item.id)}><Icon size={20} />{item.label}</button>; })}</div></div>}<main className="main-content"><Header active={active} onAdd={openNew} onToggleMenu={() => setMobileMenu(true)} />{showFrequencyTabs && <FrequencyTabs value={frequency} onChange={setFrequency} />}{view}</main><MobileNav active={active} onNavigate={navigate} onAdd={openNew} />{drawer.open && <AddExpenseDrawer key={drawer.expense?.id || `new-${frequency}-${drawer.initialDate}`} expense={drawer.expense} aliases={aliases} defaultFrequency={frequency} initialDate={drawer.initialDate} defaultStatus={drawer.defaultStatus} requiresDisclaimers={drawer.requiresDisclaimers} monthlyBudget={saved.monthlyBudget} monthlyBudgetSpent={budgetSpent} advanceAccounts={saved.advanceAccounts} creditAccounts={saved.creditAccounts} allExpenses={expenses} onClose={closeDrawer} onSave={saveExpense} onDelete={deleteExpense} />}{toast && <div className="toast" role="status"><Check size={18} weight="bold" /> {toast}</div>}</div>;
+  return <div className="app-shell"><Sidebar active={active} onNavigate={navigate} dark={saved.dark} onToggleDark={() => setSaved((current) => ({ ...current, dark: !current.dark }))} budgetSpent={budgetSpent} monthlyBudget={currentBudget} />{mobileMenu && <div className="mobile-menu-sheet"><button className="drawer-backdrop" onClick={() => setMobileMenu(false)} aria-label="Close navigation" /><div>{NAV_ITEMS.map((item) => { const Icon = item.icon; return <button key={item.id} onClick={() => navigate(item.id)}><Icon size={20} />{item.label}</button>; })}</div></div>}<main className="main-content"><Header active={active} onAdd={openNew} onToggleMenu={() => setMobileMenu(true)} />{showFrequencyTabs && <FrequencyTabs value={frequency} onChange={setFrequency} />}{view}</main><MobileNav active={active} onNavigate={navigate} onAdd={openNew} />{drawer.open && <AddExpenseDrawer key={drawer.expense?.id || `new-${frequency}-${drawer.initialDate}`} expense={drawer.expense} aliases={aliases} defaultFrequency={frequency} initialDate={drawer.initialDate} defaultStatus={drawer.defaultStatus} requiresDisclaimers={drawer.requiresDisclaimers} monthlyBudget={currentBudget} monthlyBudgetSpent={budgetSpent} advanceAccounts={saved.advanceAccounts} creditAccounts={saved.creditAccounts} allExpenses={expenses} onClose={closeDrawer} onSave={saveExpense} onDelete={deleteExpense} />}{toast && <div className="toast" role="status"><Check size={18} weight="bold" /> {toast}</div>}</div>;
 }

@@ -9,6 +9,11 @@ import {
   createDefaultState,
   deleteExpenseWithArchive,
   isBudgetExpense,
+  expensesForMonth,
+  getBudgetForMonth,
+  monthLabel,
+  shiftMonthKey,
+  withBudgetForMonth,
   isDisplayMonth,
   isPlannedExpense,
   upsertExpenseWithArchive,
@@ -70,4 +75,16 @@ test("creates a complete editable default budget and ledger state", () => {
   assert.equal(planned.length, 1);
   assert.equal(planned[0].reminder, "both");
   assert.ok(planned[0].planNote.length > 0);
+});
+
+test("stores and retrieves independent monthly budgets", () => {
+  const initial = createDefaultState();
+  const updated = withBudgetForMonth(initial, "2026-07", 42000);
+
+  assert.equal(getBudgetForMonth(updated, "2026-07"), 42000);
+  assert.equal(getBudgetForMonth(updated, "2026-08"), 50000);
+  assert.equal(updated.monthlyBudget, 50000);
+  assert.equal(monthLabel("2026-07"), "July 2026");
+  assert.equal(shiftMonthKey("2026-01", -1), "2025-12");
+  assert.equal(expensesForMonth(updated.expenses, "2026-09").length, 1);
 });

@@ -115,6 +115,40 @@ export const isCreditBorrow = (payment) => String(payment).startsWith("credit-")
 export const isBudgetExpense = (expense) => !isAdvancePayment(expense.payment) && !isCreditBorrow(expense.payment);
 export const isDisplayMonth = (expense) => String(expense.date).startsWith(DISPLAY_MONTH);
 export const isPlannedExpense = (expense) => expense.status === "planned";
+export const isMonthKey = (value) => /^\d{4}-(0[1-9]|1[0-2])$/.test(String(value));
+
+export function shiftMonthKey(monthKey, delta) {
+  const safeMonth = isMonthKey(monthKey) ? monthKey : DISPLAY_MONTH;
+  const [year, month] = safeMonth.split("-").map(Number);
+  const shifted = new Date(Date.UTC(year, month - 1 + Number(delta || 0), 1));
+  return `${shifted.getUTCFullYear()}-${String(shifted.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+export function monthLabel(monthKey) {
+  const safeMonth = isMonthKey(monthKey) ? monthKey : DISPLAY_MONTH;
+  return new Intl.DateTimeFormat("en-IN", { month: "long", year: "numeric", timeZone: "UTC" })
+    .format(new Date(`${safeMonth}-01T12:00:00Z`));
+}
+
+export const expensesForMonth = (expenses, monthKey) =>
+  expenses.filter((expense) => String(expense.date).startsWith(isMonthKey(monthKey) ? monthKey : DISPLAY_MONTH));
+
+export function getBudgetForMonth(state, monthKey) {
+  const safeMonth = isMonthKey(monthKey) ? monthKey : DISPLAY_MONTH;
+  const stored = Number(state.monthlyBudgets?.[safeMonth]);
+  if (Number.isFinite(stored) && stored >= 0) return stored;
+  return Math.max(Number(state.monthlyBudget) || 0, 0);
+}
+
+export function withBudgetForMonth(state, monthKey, amount) {
+  const safeMonth = isMonthKey(monthKey) ? monthKey : DISPLAY_MONTH;
+  const monthlyBudget = Math.max(Number(amount) || 0, 0);
+  return {
+    ...state,
+    monthlyBudget: safeMonth === DISPLAY_MONTH ? monthlyBudget : state.monthlyBudget,
+    monthlyBudgets: { ...(state.monthlyBudgets || {}), [safeMonth]: monthlyBudget },
+  };
+}
 
 export function normalizeExpense(expense) {
   const frequency = FREQUENCIES.some((item) => item.id === expense.frequency) ? expense.frequency : "daily";
@@ -144,6 +178,7 @@ export function createDefaultState() {
     advanceAccounts: DEFAULT_ADVANCES,
     creditAccounts: DEFAULT_CREDITS,
     monthlyBudget: 50000,
+    monthlyBudgets: { [DISPLAY_MONTH]: 50000 },
     aliases: DEFAULT_ALIASES,
     dark: false,
   };
@@ -178,12 +213,17 @@ export function loadState() {
     if (!raw) return fallback;
     const parsed = JSON.parse(raw);
     if (!parsed || !Array.isArray(parsed.expenses)) return fallback;
+    const monthlyBudget = Math.max(Number(parsed.monthlyBudget) || 50000, 0);
     return {
       expenses: parsed.expenses.map(normalizeExpense),
       archivedExpenses: Array.isArray(parsed.archivedExpenses) ? parsed.archivedExpenses : [],
       advanceAccounts: Array.isArray(parsed.advanceAccounts) ? parsed.advanceAccounts : DEFAULT_ADVANCES,
       creditAccounts: Array.isArray(parsed.creditAccounts) ? parsed.creditAccounts : DEFAULT_CREDITS,
-      monthlyBudget: Math.max(Number(parsed.monthlyBudget) || 50000, 0),
+      monthlyBudget,
+      monthlyBudgets: {
+        ...(parsed.monthlyBudgets && typeof parsed.monthlyBudgets === "object" ? parsed.monthlyBudgets : {}),
+        [DISPLAY_MONTH]: parsed.monthlyBudgets?.[DISPLAY_MONTH] ?? monthlyBudget,
+      },
       aliases: { ...DEFAULT_ALIASES, ...(parsed.aliases || {}) },
       dark: Boolean(parsed.dark),
     };
