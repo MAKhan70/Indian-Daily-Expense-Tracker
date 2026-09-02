@@ -75,11 +75,18 @@ export const stateSchema = z.object({
   dark: z.boolean().default(false),
   appearance: z.object({
     mode: z.enum(["light", "dark", "system"]),
-    palette: z.enum(["heritage", "indigo", "ocean", "forest", "rose"]),
+    palette: z.enum(["calm-indigo", "heritage", "ocean", "forest", "rose", "saffron", "teal", "cobalt", "amethyst", "terracotta", "monsoon", "lotus", "sandstone", "mint", "slate", "copper", "berry", "lagoon", "marigold", "graphite"]),
     look: z.enum(["soft", "crisp"]),
-  }).default({ mode: "light", palette: "heritage", look: "soft" }),
+  }).default({ mode: "light", palette: "calm-indigo", look: "soft" }),
   categoryConfig: categoryConfigSchema.default({}),
-  analyticsModules: z.object({ pie: z.boolean(), bar: z.boolean(), trend: z.boolean() }).default({ pie: true, bar: true, trend: true }),
+  analyticsModules: z.object({
+    pie: z.boolean(),
+    bar: z.boolean(),
+    trend: z.boolean(),
+    pieParameter: z.enum(["payment", "category", "frequency", "budget"]).default("payment"),
+    barParameter: z.enum(["category", "payment", "frequency", "day"]).default("category"),
+    trendParameter: z.enum(["daily", "cumulative", "budget", "payment"]).default("daily"),
+  }).default({ pie: true, bar: true, trend: true, pieParameter: "payment", barParameter: "category", trendParameter: "daily" }),
   profilePhoto: z.string().max(500_000).refine((value) => !value || /^data:image\/(jpeg|png|webp);base64,/.test(value), "Invalid profile image").default(""),
 });
 

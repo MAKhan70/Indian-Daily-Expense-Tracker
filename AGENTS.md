@@ -10,7 +10,7 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 
 ## Approved Product Direction
 
-- Preserve the aubergine, chalk-white, turmeric, and sage Daily Plan visual direction.
+- Use the selected Calm Bento direction as the visual source of truth: airy top navigation, quiet white surfaces, generous spacing, refined indigo actions, green financial accents, and responsive bento-style content regions.
 - Use the full navigation set: Dashboard, Transactions, Ledger, Budget & Ledgers, Categories, Analytics, and Settings.
 - The add-expense flow must offer Cash, UPI, Net Banking, broad common payment methods, Advance 1–5, and Credit 1–5.
 - Advance and Credit labels are configurable payment sources and must remain easy to select on mobile.
@@ -29,9 +29,12 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Keep the frontend and Better Auth API on the same production origin so mobile browsers can use secure first-party session cookies reliably.
 - Dashboard greetings must show the authenticated user's name and derive the date and morning/afternoon/evening period explicitly from Asia/Kolkata time.
 - Expense entry provides frequency-specific quick amounts: ₹5–₹100 Daily, ₹100–₹1,000 Weekly, ₹1,000–₹10,000 Monthly, and ₹10,000–₹50,000 One-off.
-- Settings owns account-synced appearance controls for Light, Dark or Device theme, multiple colour palettes, and Soft Heritage or Clean & Crisp looks; the choices must apply consistently to both the website and installed PWA.
+- Settings owns account-synced appearance controls for Light, Dark or Device theme, exactly 20 named colour palettes, and Soft Heritage or Clean & Crisp looks; the choices must apply consistently to both the website and installed PWA.
 - Monthly categories include Family Pocket Money and Medicines by named family member, plus Postpaid Mobile Bill and WiFi Bill; One-off includes quarterly, half-yearly and yearly fund management fees.
 - Categories are user-managed per frequency: users can enable or disable categories/sub-categories, move them with accessible up/down controls, and add their own. Disabled items disappear from future entry choices but remain attached to historical transactions.
+- User-created categories and sub-categories are visibly marked Custom and may be renamed or deleted with safeguards. Built-in names may be renamed while their stable IDs preserve ordering and prevent duplicate defaults; historical expense labels must survive deletions.
 - Analytics chart visibility (Pie, Bar and Trend) is an account-synced preference, while payment-method drilldown remains available independently of the visible charts.
+- Pie, Bar and Trend charts each have their own account-synced parameter selector so users choose the analytical grouping shown in each module.
+- Expense entry uses the custom Calm Bento calendar instead of the browser's native date field, with today/yesterday shortcuts, month navigation, clear selected/today states, and a mobile bottom-sheet treatment.
 - AI Analysis must remain privacy-first and transparent: derive insights locally from aggregate ledger totals. Do not send transaction data to an external AI provider without the user's explicit approval and a clearly described data-sharing choice.
 - Use fluid, progressive page transitions and responsive interaction polish, while fully respecting `prefers-reduced-motion`.

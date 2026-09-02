@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   CATEGORY_LIBRARY,
   CATEGORY_GROUPS,
+  APPEARANCE_PALETTES,
   DEFAULT_ANALYTICS_MODULES,
   DEFAULT_ADVANCES,
   DEFAULT_CREDITS,
@@ -127,9 +128,10 @@ test("creates a complete editable default budget and ledger state", () => {
   assert.equal(state.creditAccounts.length, 5);
   assert.deepEqual(state.archivedExpenses, []);
   assert.equal(state.profilePhoto, "");
-  assert.deepEqual(state.appearance, { mode: "light", palette: "heritage", look: "soft" });
+  assert.deepEqual(state.appearance, { mode: "light", palette: "calm-indigo", look: "soft" });
   assert.deepEqual(state.categoryConfig, {});
   assert.deepEqual(state.analyticsModules, DEFAULT_ANALYTICS_MODULES);
+  assert.equal(APPEARANCE_PALETTES.length, 20);
   assert.ok(state.expenses.every((expense) => CATEGORY_LIBRARY[expense.frequency].includes(expense.category)));
   assert.ok(state.expenses.every((expense) => CATEGORY_GROUPS[expense.frequency].some((group) => group.name === expense.categoryGroup && group.subcategories.includes(expense.subcategory))));
   const planned = state.expenses.filter(isPlannedExpense);
@@ -156,6 +158,12 @@ test("materializes, reorders and filters user-managed categories", () => {
   const restored = restoreCategoryOrder({ daily: [custom, ...defaults.slice().reverse()] }, "daily");
   assert.equal(restored[0].name, defaults[0].name);
   assert.equal(restored.at(-1).name, custom.name);
+
+  const renamedDefault = { ...defaults[0], name: "My Everyday Food", subcategories: [{ ...defaults[0].subcategories[0], name: "My Vegetables" }, ...defaults[0].subcategories.slice(1)] };
+  const renamed = managedCategoryGroups({ daily: [renamedDefault, ...defaults.slice(1)] }, "daily");
+  assert.equal(renamed.length, defaults.length);
+  assert.equal(renamed[0].name, "My Everyday Food");
+  assert.equal(renamed[0].subcategories[0].name, "My Vegetables");
 });
 
 test("stores and retrieves independent monthly budgets", () => {

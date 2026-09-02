@@ -34,11 +34,11 @@ export async function readLedgerState(userId: string) {
     dark: preference?.dark ?? false,
     appearance: {
       mode: (["light", "dark", "system"].includes(preference?.themeMode || "") ? preference?.themeMode : (preference?.dark ? "dark" : "light")) as "light" | "dark" | "system",
-      palette: (["heritage", "indigo", "ocean", "forest", "rose"].includes(preference?.palette || "") ? preference?.palette : "heritage") as "heritage" | "indigo" | "ocean" | "forest" | "rose",
+      palette: (["calm-indigo", "heritage", "ocean", "forest", "rose", "saffron", "teal", "cobalt", "amethyst", "terracotta", "monsoon", "lotus", "sandstone", "mint", "slate", "copper", "berry", "lagoon", "marigold", "graphite"].includes(preference?.palette || "") ? preference?.palette : "calm-indigo") as "calm-indigo" | "heritage" | "ocean" | "forest" | "rose" | "saffron" | "teal" | "cobalt" | "amethyst" | "terracotta" | "monsoon" | "lotus" | "sandstone" | "mint" | "slate" | "copper" | "berry" | "lagoon" | "marigold" | "graphite",
       look: (["soft", "crisp"].includes(preference?.look || "") ? preference?.look : "soft") as "soft" | "crisp",
     },
     categoryConfig: parseJson(preference?.categoryConfigJson, {}),
-    analyticsModules: parseJson(preference?.analyticsModulesJson, { pie: true, bar: true, trend: true }),
+    analyticsModules: parseJson(preference?.analyticsModulesJson, { pie: true, bar: true, trend: true, pieParameter: "payment", barParameter: "category", trendParameter: "daily" }),
     profilePhoto: preference?.profilePhoto ?? "",
   } };
 }

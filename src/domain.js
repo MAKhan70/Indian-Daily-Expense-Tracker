@@ -16,8 +16,9 @@ export function indiaDateKey(value = new Date()) {
 export const DISPLAY_DATE = indiaDateKey();
 export const DISPLAY_MONTH = DISPLAY_DATE.slice(0, 7);
 
-export const APPEARANCE_DEFAULTS = { mode: "light", palette: "heritage", look: "soft" };
-export const DEFAULT_ANALYTICS_MODULES = { pie: true, bar: true, trend: true };
+export const APPEARANCE_PALETTES = ["calm-indigo", "heritage", "ocean", "forest", "rose", "saffron", "teal", "cobalt", "amethyst", "terracotta", "monsoon", "lotus", "sandstone", "mint", "slate", "copper", "berry", "lagoon", "marigold", "graphite"];
+export const APPEARANCE_DEFAULTS = { mode: "light", palette: "calm-indigo", look: "soft" };
+export const DEFAULT_ANALYTICS_MODULES = { pie: true, bar: true, trend: true, pieParameter: "payment", barParameter: "category", trendParameter: "daily" };
 
 export const QUICK_AMOUNTS = {
   daily: [5, 10, 20, 100],
@@ -131,16 +132,17 @@ export function managedCategoryGroups(categoryConfig, frequency) {
   }));
   const configured = Array.isArray(categoryConfig?.[safeFrequency]) ? categoryConfig[safeFrequency] : [];
   if (!configured.length) return builtIn;
+  const builtInById = new Map(builtIn.map((group) => [group.id, group]));
   const builtInByName = new Map(builtIn.map((group) => [group.name.toLocaleLowerCase("en-IN"), group]));
   const normalized = configured.filter((group) => group && typeof group.name === "string").map((group) => {
-    const fallback = builtInByName.get(group.name.toLocaleLowerCase("en-IN"));
+    const fallback = builtInById.get(group.id) || builtInByName.get(group.name.toLocaleLowerCase("en-IN"));
     const subcategories = Array.isArray(group.subcategories) ? group.subcategories.filter((item) => item && typeof item.name === "string").map((item) => ({ id: item.id || crypto.randomUUID(), name: item.name, enabled: item.enabled !== false, custom: Boolean(item.custom) })) : [];
-    const knownNames = new Set(subcategories.map((item) => item.name.toLocaleLowerCase("en-IN")));
-    for (const item of fallback?.subcategories || []) if (!knownNames.has(item.name.toLocaleLowerCase("en-IN"))) subcategories.push(item);
+    const knownIds = new Set(subcategories.map((item) => item.id));
+    for (const item of fallback?.subcategories || []) if (!knownIds.has(item.id)) subcategories.push(item);
     return { id: group.id || fallback?.id || crypto.randomUUID(), name: group.name, enabled: group.enabled !== false, custom: Boolean(group.custom), subcategories: subcategories.length ? subcategories : (fallback?.subcategories || []) };
   });
-  const knownGroups = new Set(normalized.map((group) => group.name.toLocaleLowerCase("en-IN")));
-  for (const group of builtIn) if (!knownGroups.has(group.name.toLocaleLowerCase("en-IN"))) normalized.push(group);
+  const knownGroupIds = new Set(normalized.map((group) => group.id));
+  for (const group of builtIn) if (!knownGroupIds.has(group.id)) normalized.push(group);
   return normalized;
 }
 
@@ -155,21 +157,21 @@ export function activeCategoryGroups(categoryConfig, frequency) {
 export function restoreCategoryOrder(categoryConfig, frequency) {
   const current = managedCategoryGroups(categoryConfig, frequency);
   const defaults = managedCategoryGroups({}, frequency);
-  const byName = new Map(current.map((group) => [group.name.toLocaleLowerCase("en-IN"), group]));
-  const defaultNames = new Set(defaults.map((group) => group.name.toLocaleLowerCase("en-IN")));
+  const byId = new Map(current.map((group) => [group.id, group]));
+  const defaultIds = new Set(defaults.map((group) => group.id));
   const reordered = defaults.map((defaultGroup) => {
-    const saved = byName.get(defaultGroup.name.toLocaleLowerCase("en-IN")) || defaultGroup;
-    const savedSubcategories = new Map(saved.subcategories.map((item) => [item.name.toLocaleLowerCase("en-IN"), item]));
-    const builtInNames = new Set(defaultGroup.subcategories.map((item) => item.name.toLocaleLowerCase("en-IN")));
+    const saved = byId.get(defaultGroup.id) || defaultGroup;
+    const savedSubcategories = new Map(saved.subcategories.map((item) => [item.id, item]));
+    const builtInIds = new Set(defaultGroup.subcategories.map((item) => item.id));
     return {
       ...saved,
       subcategories: [
-        ...defaultGroup.subcategories.map((item) => savedSubcategories.get(item.name.toLocaleLowerCase("en-IN")) || item),
-        ...saved.subcategories.filter((item) => !builtInNames.has(item.name.toLocaleLowerCase("en-IN"))),
+        ...defaultGroup.subcategories.map((item) => savedSubcategories.get(item.id) || item),
+        ...saved.subcategories.filter((item) => !builtInIds.has(item.id)),
       ],
     };
   });
-  return [...reordered, ...current.filter((group) => !defaultNames.has(group.name.toLocaleLowerCase("en-IN")))];
+  return [...reordered, ...current.filter((group) => !defaultIds.has(group.id))];
 }
 
 export function categoryGroupFor(frequency, subcategory) {
@@ -313,13 +315,8 @@ export function withBudgetForMonth(state, monthKey, amount) {
 export function normalizeExpense(expense, categoryConfig = {}) {
   const frequency = FREQUENCIES.some((item) => item.id === expense.frequency) ? expense.frequency : "daily";
   const configuredGroups = managedCategoryGroups(categoryConfig, frequency);
-  const configuredCategories = configuredGroups.flatMap((group) => group.subcategories.map((item) => item.name));
-  const category = configuredCategories.includes(expense.subcategory || expense.category)
-    ? (expense.subcategory || expense.category)
-    : configuredCategories[0];
-  const categoryGroup = configuredGroups.some((group) => group.name === expense.categoryGroup && group.subcategories.some((item) => item.name === category))
-    ? expense.categoryGroup
-    : configuredGroups.find((group) => group.subcategories.some((item) => item.name === category))?.name || categoryGroupFor(frequency, category);
+  const category = String(expense.subcategory || expense.category || configuredGroups[0].subcategories[0].name);
+  const categoryGroup = String(expense.categoryGroup || configuredGroups.find((group) => group.subcategories.some((item) => item.name === category))?.name || categoryGroupFor(frequency, category));
   return {
     ...expense,
     frequency,
@@ -402,7 +399,7 @@ export function loadState() {
       dark: Boolean(parsed.dark),
       appearance: {
         mode: ["light", "dark", "system"].includes(parsed.appearance?.mode) ? parsed.appearance.mode : (parsed.dark ? "dark" : "light"),
-        palette: ["heritage", "indigo", "ocean", "forest", "rose"].includes(parsed.appearance?.palette) ? parsed.appearance.palette : APPEARANCE_DEFAULTS.palette,
+        palette: APPEARANCE_PALETTES.includes(parsed.appearance?.palette) ? parsed.appearance.palette : APPEARANCE_DEFAULTS.palette,
         look: ["soft", "crisp"].includes(parsed.appearance?.look) ? parsed.appearance.look : APPEARANCE_DEFAULTS.look,
       },
       categoryConfig: parsed.categoryConfig && typeof parsed.categoryConfig === "object" ? parsed.categoryConfig : {},
@@ -410,6 +407,9 @@ export function loadState() {
         pie: parsed.analyticsModules?.pie !== false,
         bar: parsed.analyticsModules?.bar !== false,
         trend: parsed.analyticsModules?.trend !== false,
+        pieParameter: ["payment", "category", "frequency", "budget"].includes(parsed.analyticsModules?.pieParameter) ? parsed.analyticsModules.pieParameter : "payment",
+        barParameter: ["category", "payment", "frequency", "day"].includes(parsed.analyticsModules?.barParameter) ? parsed.analyticsModules.barParameter : "category",
+        trendParameter: ["daily", "cumulative", "budget", "payment"].includes(parsed.analyticsModules?.trendParameter) ? parsed.analyticsModules.trendParameter : "daily",
       },
       profilePhoto: typeof parsed.profilePhoto === "string" && parsed.profilePhoto.startsWith("data:image/") ? parsed.profilePhoto : "",
     };

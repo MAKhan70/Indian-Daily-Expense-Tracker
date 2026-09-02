@@ -31,9 +31,9 @@ export const emptyLedgerState = () => {
     monthlyBudgets: { [month]: 50000 },
     aliases: {},
     dark: false,
-    appearance: { mode: "light", palette: "heritage", look: "soft" },
+    appearance: { mode: "light", palette: "calm-indigo", look: "soft" },
     categoryConfig: {},
-    analyticsModules: { pie: true, bar: true, trend: true },
+    analyticsModules: { pie: true, bar: true, trend: true, pieParameter: "payment", barParameter: "category", trendParameter: "daily" },
     profilePhoto: "",
   };
 };

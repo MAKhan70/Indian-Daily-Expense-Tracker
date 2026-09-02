@@ -62,7 +62,10 @@ test("category studio supports custom, enabled and ordered categories across fre
   assert.match(categories, /Add a sub-category/);
   assert.match(categories, /aria-label={`Move \$\{group\.name\} up`}/);
   assert.match(categories, /aria-pressed={group\.enabled}/);
-  assert.match(categories, /Disabled items remain on past transactions/);
+  assert.match(categories, /past transactions/);
+  assert.match(categories, /className="custom-badge">Custom/);
+  assert.match(categories, /Edit category name/);
+  assert.match(categories, /Delete custom item/);
   const drawer = appSource.slice(appSource.indexOf("function AddExpenseDrawer"), appSource.indexOf("export default function App"));
   assert.match(drawer, /activeCategoryGroups\(categoryConfig, form\.frequency\)/);
 });
@@ -75,6 +78,21 @@ test("analytics exposes selectable chart modules and private AI analysis", () =>
   assert.match(reports, /modules\.trend/);
   assert.match(reports, />AI Analysis</);
   assert.match(reports, /nothing is sent outside Pocket Ledger/);
+  assert.match(reports, /id="pie-parameter"/);
+  assert.match(reports, /id="bar-parameter"/);
+  assert.match(reports, /id="trend-parameter"/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(styles, /\.skip-link:focus/);
+});
+
+test("expense entry uses the modern calendar and settings expose twenty palettes", () => {
+  const datePicker = appSource.slice(appSource.indexOf("function ModernDatePicker"), appSource.indexOf("function AddExpenseDrawer"));
+  assert.match(datePicker, /date-popover/);
+  assert.match(datePicker, />Today</);
+  assert.match(datePicker, />Yesterday</);
+  const drawer = appSource.slice(appSource.indexOf("function AddExpenseDrawer"), appSource.indexOf("function LedgerApp"));
+  assert.doesNotMatch(drawer, /type="date"/);
+  const settings = appSource.slice(appSource.indexOf("function SettingsView"), appSource.indexOf("function ModernDatePicker"));
+  assert.equal((settings.match(/\["[a-z-]+", "[^"]+"\]/g) || []).length, 23);
+  assert.match(settings, /Calm Indigo/);
 });

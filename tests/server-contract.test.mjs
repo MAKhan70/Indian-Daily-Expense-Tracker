@@ -6,6 +6,7 @@ const root = new URL("../", import.meta.url);
 const server = await readFile(new URL("server/index.ts", root), "utf8");
 const schema = await readFile(new URL("prisma/schema.prisma", root), "utf8");
 const auth = await readFile(new URL("server/auth.ts", root), "utf8");
+const validation = await readFile(new URL("server/validation.ts", root), "utf8");
 
 test("protects every ledger state endpoint with an authenticated session", () => {
   for (const route of ["/api/state\"", "/api/state/import", "/api/state/start-fresh"]) {
@@ -34,6 +35,10 @@ test("persists category management and analytics module preferences", () => {
   const preference = schema.slice(schema.indexOf("model UserPreference"), schema.indexOf("\n}", schema.indexOf("model UserPreference")));
   assert.match(preference, /categoryConfigJson\s+String/);
   assert.match(preference, /analyticsModulesJson\s+String/);
+  assert.match(validation, /pieParameter/);
+  assert.match(validation, /barParameter/);
+  assert.match(validation, /trendParameter/);
+  assert.match(validation, /calm-indigo/);
 });
 
 test("uses strong password limits, database rate limiting and secure production cookies", () => {
