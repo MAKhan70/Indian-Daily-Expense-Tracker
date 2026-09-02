@@ -24,6 +24,13 @@ test("scopes finance records to a user and cascades account deletion", () => {
   }
 });
 
+test("namespaces imported expense identifiers per account", async () => {
+  const repository = await readFile(new URL("server/state-repository.ts", root), "utf8");
+  assert.match(repository, /scopedRecordId\(userId, id\)/);
+  assert.match(repository, /scopedRecordId\(userId, archiveId\)/);
+  assert.match(repository, /sourceExpenseId: scopedRecordId\(userId, id\)/);
+});
+
 test("persists account appearance preferences", () => {
   const preference = schema.slice(schema.indexOf("model UserPreference"), schema.indexOf("\n}", schema.indexOf("model UserPreference")));
   assert.match(preference, /themeMode\s+String/);

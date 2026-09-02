@@ -4,6 +4,7 @@ import type { LedgerStateInput } from "./validation.js";
 
 const toMinor = (value: number) => Math.round(Number(value || 0) * 100);
 const fromMinor = (value: number) => Number(value || 0) / 100;
+const scopedRecordId = (userId: string, id: string) => id.startsWith(`${userId}:`) ? id : `${userId}:${id}`;
 const parseJson = <T>(value: string | null | undefined, fallback: T): T => {
   try { return value ? JSON.parse(value) as T : fallback; } catch { return fallback; }
 };
@@ -49,8 +50,8 @@ export async function replaceLedgerState(userId: string, state: LedgerStateInput
     await tx.expense.deleteMany({ where: { userId } });
     await tx.monthlyBudget.deleteMany({ where: { userId } });
     await tx.paymentAccount.deleteMany({ where: { userId } });
-    if (state.expenses.length) await tx.expense.createMany({ data: state.expenses.map(({ amount, ...item }) => ({ ...item, amountMinor: toMinor(amount), userId })) });
-    if (state.archivedExpenses.length) await tx.expenseArchive.createMany({ data: state.archivedExpenses.map(({ archiveId, archivedAt, archiveReason, id, amount, ...item }) => ({ ...item, id: archiveId, sourceExpenseId: id, amountMinor: toMinor(amount), archiveReason, archivedAt: new Date(archivedAt), userId })) });
+    if (state.expenses.length) await tx.expense.createMany({ data: state.expenses.map(({ amount, id, ...item }) => ({ ...item, id: scopedRecordId(userId, id), amountMinor: toMinor(amount), userId })) });
+    if (state.archivedExpenses.length) await tx.expenseArchive.createMany({ data: state.archivedExpenses.map(({ archiveId, archivedAt, archiveReason, id, amount, ...item }) => ({ ...item, id: scopedRecordId(userId, archiveId), sourceExpenseId: scopedRecordId(userId, id), amountMinor: toMinor(amount), archiveReason, archivedAt: new Date(archivedAt), userId })) });
     const budgets = Object.entries(state.monthlyBudgets).map(([month, amount]) => ({ userId, month, amountMinor: toMinor(amount) }));
     if (budgets.length) await tx.monthlyBudget.createMany({ data: budgets });
     await tx.paymentAccount.createMany({ data: [
