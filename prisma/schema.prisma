@@ -170,6 +170,8 @@ model UserPreference {
   themeMode            String   @default("light")
   palette              String   @default("heritage")
   look                  String   @default("soft")
+  categoryConfigJson    String   @default("{}")
+  analyticsModulesJson String   @default("{\"pie\":true,\"bar\":true,\"trend\":true}")
   profilePhoto         String?
   localImportCompleted Boolean  @default(false)
   createdAt            DateTime @default(now())

@@ -30,6 +30,12 @@ test("persists account appearance preferences", () => {
   assert.match(preference, /look\s+String/);
 });
 
+test("persists category management and analytics module preferences", () => {
+  const preference = schema.slice(schema.indexOf("model UserPreference"), schema.indexOf("\n}", schema.indexOf("model UserPreference")));
+  assert.match(preference, /categoryConfigJson\s+String/);
+  assert.match(preference, /analyticsModulesJson\s+String/);
+});
+
 test("uses strong password limits, database rate limiting and secure production cookies", () => {
   assert.match(auth, /minPasswordLength:\s*12/);
   assert.match(auth, /storage:\s*"database"/);

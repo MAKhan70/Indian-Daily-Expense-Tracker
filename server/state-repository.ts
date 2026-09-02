@@ -4,6 +4,9 @@ import type { LedgerStateInput } from "./validation.js";
 
 const toMinor = (value: number) => Math.round(Number(value || 0) * 100);
 const fromMinor = (value: number) => Number(value || 0) / 100;
+const parseJson = <T>(value: string | null | undefined, fallback: T): T => {
+  try { return value ? JSON.parse(value) as T : fallback; } catch { return fallback; }
+};
 
 export async function readLedgerState(userId: string) {
   const [expenses, archives, budgets, accounts, preference] = await Promise.all([
@@ -34,6 +37,8 @@ export async function readLedgerState(userId: string) {
       palette: (["heritage", "indigo", "ocean", "forest", "rose"].includes(preference?.palette || "") ? preference?.palette : "heritage") as "heritage" | "indigo" | "ocean" | "forest" | "rose",
       look: (["soft", "crisp"].includes(preference?.look || "") ? preference?.look : "soft") as "soft" | "crisp",
     },
+    categoryConfig: parseJson(preference?.categoryConfigJson, {}),
+    analyticsModules: parseJson(preference?.analyticsModulesJson, { pie: true, bar: true, trend: true }),
     profilePhoto: preference?.profilePhoto ?? "",
   } };
 }
@@ -54,8 +59,8 @@ export async function replaceLedgerState(userId: string, state: LedgerStateInput
     ] });
     await tx.userPreference.upsert({
       where: { userId },
-      create: { userId, dark: state.dark, themeMode: state.appearance.mode, palette: state.appearance.palette, look: state.appearance.look, profilePhoto: state.profilePhoto || null, localImportCompleted },
-      update: { dark: state.dark, themeMode: state.appearance.mode, palette: state.appearance.palette, look: state.appearance.look, profilePhoto: state.profilePhoto || null, localImportCompleted },
+      create: { userId, dark: state.dark, themeMode: state.appearance.mode, palette: state.appearance.palette, look: state.appearance.look, categoryConfigJson: JSON.stringify(state.categoryConfig), analyticsModulesJson: JSON.stringify(state.analyticsModules), profilePhoto: state.profilePhoto || null, localImportCompleted },
+      update: { dark: state.dark, themeMode: state.appearance.mode, palette: state.appearance.palette, look: state.appearance.look, categoryConfigJson: JSON.stringify(state.categoryConfig), analyticsModulesJson: JSON.stringify(state.analyticsModules), profilePhoto: state.profilePhoto || null, localImportCompleted },
     });
   });
   return readLedgerState(userId);

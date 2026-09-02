@@ -42,6 +42,28 @@ const creditAccountSchema = z.object({
   creditLimit: z.coerce.number().min(0).max(1_000_000_000),
 });
 
+const managedSubcategorySchema = z.object({
+  id: shortText(128).min(1),
+  name: shortText(120).min(1),
+  enabled: z.boolean(),
+  custom: z.boolean().default(false),
+});
+
+const managedCategorySchema = z.object({
+  id: shortText(128).min(1),
+  name: shortText(100).min(1),
+  enabled: z.boolean(),
+  custom: z.boolean().default(false),
+  subcategories: z.array(managedSubcategorySchema).min(1).max(500),
+});
+
+const categoryConfigSchema = z.object({
+  daily: z.array(managedCategorySchema).max(100).optional(),
+  weekly: z.array(managedCategorySchema).max(100).optional(),
+  monthly: z.array(managedCategorySchema).max(100).optional(),
+  "one-off": z.array(managedCategorySchema).max(100).optional(),
+});
+
 export const stateSchema = z.object({
   expenses: z.array(expenseSchema).max(25_000),
   archivedExpenses: z.array(archiveSchema).max(50_000).default([]),
@@ -56,6 +78,8 @@ export const stateSchema = z.object({
     palette: z.enum(["heritage", "indigo", "ocean", "forest", "rose"]),
     look: z.enum(["soft", "crisp"]),
   }).default({ mode: "light", palette: "heritage", look: "soft" }),
+  categoryConfig: categoryConfigSchema.default({}),
+  analyticsModules: z.object({ pie: z.boolean(), bar: z.boolean(), trend: z.boolean() }).default({ pie: true, bar: true, trend: true }),
   profilePhoto: z.string().max(500_000).refine((value) => !value || /^data:image\/(jpeg|png|webp);base64,/.test(value), "Invalid profile image").default(""),
 });
 

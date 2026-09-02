@@ -55,3 +55,26 @@ test("dashboard greeting uses the account name and IST while settings expose app
   assert.match(settings, />Look</);
   assert.match(settings, /\["system", "Device"\]/);
 });
+
+test("category studio supports custom, enabled and ordered categories across frequencies", () => {
+  const categories = appSource.slice(appSource.indexOf("function CategoriesView"), appSource.indexOf("function ReportsView"));
+  assert.match(categories, /Add your own category/);
+  assert.match(categories, /Add a sub-category/);
+  assert.match(categories, /aria-label={`Move \$\{group\.name\} up`}/);
+  assert.match(categories, /aria-pressed={group\.enabled}/);
+  assert.match(categories, /Disabled items remain on past transactions/);
+  const drawer = appSource.slice(appSource.indexOf("function AddExpenseDrawer"), appSource.indexOf("export default function App"));
+  assert.match(drawer, /activeCategoryGroups\(categoryConfig, form\.frequency\)/);
+});
+
+test("analytics exposes selectable chart modules and private AI analysis", () => {
+  const reports = appSource.slice(appSource.indexOf("function ReportsView"), appSource.indexOf("function SettingsView"));
+  assert.match(reports, /Choose chart modules/);
+  assert.match(reports, /modules\.pie/);
+  assert.match(reports, /modules\.bar/);
+  assert.match(reports, /modules\.trend/);
+  assert.match(reports, />AI Analysis</);
+  assert.match(reports, /nothing is sent outside Pocket Ledger/);
+  assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(styles, /\.skip-link:focus/);
+});

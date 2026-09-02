@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   CATEGORY_LIBRARY,
   CATEGORY_GROUPS,
+  DEFAULT_ANALYTICS_MODULES,
   DEFAULT_ADVANCES,
   DEFAULT_CREDITS,
   PAYMENT_GROUPS,
@@ -15,7 +16,10 @@ import {
   expensesForMonth,
   getBudgetForMonth,
   indiaGreeting,
+  managedCategoryGroups,
+  activeCategoryGroups,
   monthLabel,
+  restoreCategoryOrder,
   QUICK_AMOUNTS,
   shiftMonthKey,
   withBudgetForMonth,
@@ -124,12 +128,34 @@ test("creates a complete editable default budget and ledger state", () => {
   assert.deepEqual(state.archivedExpenses, []);
   assert.equal(state.profilePhoto, "");
   assert.deepEqual(state.appearance, { mode: "light", palette: "heritage", look: "soft" });
+  assert.deepEqual(state.categoryConfig, {});
+  assert.deepEqual(state.analyticsModules, DEFAULT_ANALYTICS_MODULES);
   assert.ok(state.expenses.every((expense) => CATEGORY_LIBRARY[expense.frequency].includes(expense.category)));
   assert.ok(state.expenses.every((expense) => CATEGORY_GROUPS[expense.frequency].some((group) => group.name === expense.categoryGroup && group.subcategories.includes(expense.subcategory))));
   const planned = state.expenses.filter(isPlannedExpense);
   assert.equal(planned.length, 1);
   assert.equal(planned[0].reminder, "both");
   assert.ok(planned[0].planNote.length > 0);
+});
+
+test("materializes, reorders and filters user-managed categories", () => {
+  const defaults = managedCategoryGroups({}, "daily");
+  assert.equal(defaults[0].custom, false);
+  assert.ok(defaults[0].subcategories.every((item) => item.enabled));
+
+  const custom = { id: "custom-neighbourhood", name: "Neighbourhood Support", enabled: true, custom: true, subcategories: [{ id: "custom-milk", name: "Milk collection", enabled: true, custom: true }] };
+  const disabled = { ...defaults[0], enabled: false };
+  const config = { daily: [custom, disabled, ...defaults.slice(1)] };
+  const managed = managedCategoryGroups(config, "daily");
+  assert.equal(managed[0].name, "Neighbourhood Support");
+  assert.equal(managed[1].enabled, false);
+  const active = activeCategoryGroups(config, "daily");
+  assert.equal(active[0].name, "Neighbourhood Support");
+  assert.ok(active.every((group) => group.enabled && group.subcategories.every((item) => item.enabled)));
+
+  const restored = restoreCategoryOrder({ daily: [custom, ...defaults.slice().reverse()] }, "daily");
+  assert.equal(restored[0].name, defaults[0].name);
+  assert.equal(restored.at(-1).name, custom.name);
 });
 
 test("stores and retrieves independent monthly budgets", () => {

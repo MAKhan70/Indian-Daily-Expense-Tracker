@@ -31,3 +31,7 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Expense entry provides frequency-specific quick amounts: ₹5–₹100 Daily, ₹100–₹1,000 Weekly, ₹1,000–₹10,000 Monthly, and ₹10,000–₹50,000 One-off.
 - Settings owns account-synced appearance controls for Light, Dark or Device theme, multiple colour palettes, and Soft Heritage or Clean & Crisp looks; the choices must apply consistently to both the website and installed PWA.
 - Monthly categories include Family Pocket Money and Medicines by named family member, plus Postpaid Mobile Bill and WiFi Bill; One-off includes quarterly, half-yearly and yearly fund management fees.
+- Categories are user-managed per frequency: users can enable or disable categories/sub-categories, move them with accessible up/down controls, and add their own. Disabled items disappear from future entry choices but remain attached to historical transactions.
+- Analytics chart visibility (Pie, Bar and Trend) is an account-synced preference, while payment-method drilldown remains available independently of the visible charts.
+- AI Analysis must remain privacy-first and transparent: derive insights locally from aggregate ledger totals. Do not send transaction data to an external AI provider without the user's explicit approval and a clearly described data-sharing choice.
+- Use fluid, progressive page transitions and responsive interaction polish, while fully respecting `prefers-reduced-motion`.

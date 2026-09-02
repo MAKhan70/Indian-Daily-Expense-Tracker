@@ -32,6 +32,8 @@ export const emptyLedgerState = () => {
     aliases: {},
     dark: false,
     appearance: { mode: "light", palette: "heritage", look: "soft" },
+    categoryConfig: {},
+    analyticsModules: { pie: true, bar: true, trend: true },
     profilePhoto: "",
   };
 };
