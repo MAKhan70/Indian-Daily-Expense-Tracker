@@ -11,7 +11,7 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 ## Approved Product Direction
 
 - Use the selected Calm Bento direction as the visual source of truth: airy top navigation, quiet white surfaces, generous spacing, refined indigo actions, green financial accents, and responsive bento-style content regions.
-- Use the full navigation set: Dashboard, Transactions, Ledger, Budget & Ledgers, Categories, Analytics, and Settings.
+- Use the full navigation set: Dashboard, Transactions, Ledger, Budget & Ledgers, Monthly Grocery List, Categories, Analytics, and Settings.
 - The add-expense flow must offer Cash, UPI, Net Banking, broad common payment methods, Advance 1–5, and Credit 1–5.
 - Advance and Credit labels are configurable payment sources and must remain easy to select on mobile.
 - Expenses are classified separately as Daily, Weekly, Monthly, or One-off across entry, browsing, categories, and analytics.
@@ -22,7 +22,7 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - The Log Expense drawer must fit the viewport without horizontal scrolling; its frequency control reflows instead of requiring sideways navigation.
 - Ledger is a navigable month/year calendar. Selecting a date reveals its records and lets users add a past/current expense or a future planned expense.
 - Future planned expenses remain outside completed-spend totals until converted to an actual entry and support in-app month-before, week-before, both, or no reminder.
-- Ledger-originated edits require three explicit acknowledgements: the active value is replaced, the prior value is archived, and dependent totals recalculate.
+- Every recorded-expense edit and deletion requires a confirmation popup explaining that the active value changes, the prior value is archived, and dependent totals recalculate; do not use acknowledgement checkboxes.
 - Preserve prior values as read-only, timestamped Archived snapshots whenever an expense is edited or deleted.
 - Ship Pocket Ledger as an installable HTTPS PWA with standalone display metadata, 192px/512px/maskable/Apple icons, an offline application shell, and an in-app install entry point.
 - Prisma and account-backed synchronization are now authorized. Keep every finance query scoped by authenticated user ID, retain the one-time guarded local import, and never cache `/api` responses in the service worker.
@@ -36,5 +36,7 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Analytics chart visibility (Pie, Bar and Trend) is an account-synced preference, while payment-method drilldown remains available independently of the visible charts.
 - Pie, Bar and Trend charts each have their own account-synced parameter selector so users choose the analytical grouping shown in each module.
 - Expense entry uses the custom Calm Bento calendar instead of the browser's native date field, with today/yesterday shortcuts, month navigation, clear selected/today states, and a mobile bottom-sheet treatment.
+- Monthly Grocery List is a standalone, month-scoped planner and must never create expenses or affect budgets. It supports custom items, quantity/unit, optional unit price with calculated total, grocery segregation including custom groups, included/skipped status, purchased status, copying a previous month, and a separate analytics panel.
+- Transaction rows show the recorded date immediately below each amount on desktop and mobile.
 - AI Analysis must remain privacy-first and transparent: derive insights locally from aggregate ledger totals. Do not send transaction data to an external AI provider without the user's explicit approval and a clearly described data-sharing choice.
 - Use fluid, progressive page transitions and responsive interaction polish, while fully respecting `prefers-reduced-motion`.

@@ -172,6 +172,8 @@ progress::-moz-progress-bar { background: var(--sage); border-radius: 10px; }
 .frequency-badge.weekly { color: #856100; background: #f8ebc8; }
 .frequency-badge.monthly { color: #65437a; background: #e9dff0; }
 .frequency-badge.one-off { color: #8e4d63; background: #f2dfe4; }
+.transaction-amount-cell { min-width: 0; display: grid; justify-items: end; gap: 3px; text-align: right; }
+.transaction-amount-cell small { max-width: 150px; overflow: hidden; color: var(--muted); font-size: 10px; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
 .transaction-amount { text-align: right; }
 .transaction-edit { opacity: 0; color: var(--muted); }
 .transaction-row:hover .transaction-edit, .transaction-row:focus-visible .transaction-edit { opacity: 1; }
@@ -894,6 +896,79 @@ body, :root[data-theme="dark"] body { background: var(--bg); }
 .confirm-card h2 { margin: 18px 0 8px; font-size: 21px; }
 .confirm-card p { margin: 0; color: var(--muted); line-height: 1.55; }
 .confirm-card > div { display: flex; justify-content: flex-end; gap: 9px; margin-top: 22px; }
+.expense-confirm-card .eyebrow { display: block; margin-top: 15px; }
+.expense-confirm-card h2 { margin-top: 6px; }
+.expense-confirm-card > p strong { color: var(--text); }
+.expense-confirm-card ol { display: grid; gap: 10px; margin: 18px 0 0; padding-inline-start: 24px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.expense-confirm-card li::marker { color: var(--plum); font-weight: 700; }
+
+/* Standalone monthly grocery planner */
+body { accent-color: var(--plum); }
+.grocery-page { min-width: 0; display: grid; gap: 20px; }
+.grocery-hero { min-height: auto; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 22px; }
+.grocery-hero h2 { margin: 6px 0 8px; font-size: clamp(1.7rem, 3vw, 2.45rem); letter-spacing: -.035em; }
+.grocery-hero p { max-width: 720px; margin: 0; color: var(--muted); line-height: 1.55; }
+.grocery-summary { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding-top: 18px; border-top: 1px solid var(--line); }
+.grocery-summary > span, .grocery-analytics-stats > span { min-width: 0; display: grid; gap: 4px; padding: 14px 16px; border-radius: 13px; background: var(--surface-soft); }
+.grocery-summary small, .grocery-analytics-stats small { color: var(--muted); font-size: 11px; }
+.grocery-summary strong, .grocery-analytics-stats strong { overflow-wrap: anywhere; font-size: 20px; }
+.grocery-editor-card, .grocery-list-card { min-height: auto; }
+.grocery-item-form { display: grid; grid-template-columns: minmax(180px, 1.4fr) minmax(160px, 1fr) minmax(100px, .55fr) minmax(110px, .65fr) minmax(150px, .8fr); align-items: end; gap: 12px; margin-top: 22px; }
+.grocery-item-form label { min-width: 0; display: grid; gap: 7px; }
+.grocery-item-form label > span { color: var(--muted); font-size: 12px; font-weight: 600; }
+.grocery-item-form label small { font-weight: 400; }
+.grocery-item-form input, .grocery-item-form select { width: 100%; min-width: 0; font-size: 1rem; }
+.grocery-note-field { grid-column: span 2; }
+.grocery-total-preview { min-height: 54px; display: grid; align-content: center; gap: 3px; padding: 8px 12px; border: 1px solid color-mix(in oklab, var(--sage) 25%, var(--line)); border-radius: 10px; background: color-mix(in oklab, var(--sage) 6%, var(--surface)); }
+.grocery-total-preview span { color: var(--muted); font-size: 10px; }
+.grocery-total-preview strong { font-size: 13px; }
+.grocery-list-toolbar { display: flex; align-items: center; gap: 12px; }
+.grocery-list-toolbar .secondary-button:disabled { opacity: .45; cursor: not-allowed; }
+.grocery-filter-chips { display: flex; flex-wrap: wrap; gap: 7px; margin: 16px 0 20px; }
+.grocery-filter-chips button { min-height: 38px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); background: var(--surface); font-size: 12px; font-weight: 600; }
+.grocery-filter-chips button.active { color: #fff; border-color: var(--plum); background: var(--plum); }
+.grocery-groups { display: grid; gap: 16px; }
+.grocery-group { overflow: clip; border: 1px solid var(--line); border-radius: 15px; background: var(--surface); }
+.grocery-group-head { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--surface-soft); }
+.grocery-group-head > div { display: flex; align-items: center; gap: 9px; }
+.grocery-group-head svg { color: var(--plum); }
+.grocery-group-head > span { color: var(--muted); font-size: 11px; text-align: right; }
+.grocery-items article { min-width: 0; display: grid; grid-template-columns: minmax(220px, 1fr) minmax(100px, .45fr) minmax(90px, .4fr) minmax(116px, auto) 84px; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--line); transition: opacity 160ms ease, background 160ms ease; }
+.grocery-items article:last-child { border-bottom: 0; }
+.grocery-items article.skipped { opacity: .62; background: var(--surface-soft); }
+.grocery-items article.purchased { background: color-mix(in oklab, var(--sage) 5%, var(--surface)); }
+.grocery-items article > p { grid-column: 1 / -1; margin: -4px 0 0 32px; color: var(--muted); font-size: 11px; }
+.grocery-include { min-width: 0; display: grid; grid-template-columns: 22px minmax(0, 1fr); align-items: center; gap: 10px; cursor: pointer; }
+.grocery-include input { width: 20px; height: 20px; min-height: 20px; margin: 0; padding: 0; }
+.grocery-include > span, .grocery-quantity, .grocery-item-total { min-width: 0; display: grid; gap: 3px; }
+.grocery-include strong { overflow-wrap: anywhere; }
+.grocery-include small, .grocery-quantity small, .grocery-item-total small { color: var(--muted); font-size: 10px; }
+.grocery-items article.skipped .grocery-include strong { text-decoration: line-through; }
+.grocery-bought { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; color: var(--muted); background: var(--surface); font-size: 11px; font-weight: 700; }
+.grocery-bought.active { color: var(--sage); border-color: color-mix(in oklab, var(--sage) 38%, var(--line)); background: color-mix(in oklab, var(--sage) 9%, var(--surface)); }
+.grocery-bought:disabled { opacity: .45; cursor: not-allowed; }
+.grocery-row-actions { display: flex; justify-content: flex-end; gap: 5px; }
+.grocery-row-actions button { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 9px; color: var(--muted); background: var(--surface); }
+.grocery-row-actions .delete-custom { color: #ad4e4e; }
+.grocery-empty { border: 1px dashed var(--line); border-radius: 15px; }
+.grocery-analytics-card { margin-top: 24px; padding: 22px; border: 1px solid color-mix(in oklab, var(--sage) 24%, var(--line)); border-radius: 16px; background: color-mix(in oklab, var(--sage) 5%, var(--surface)); }
+.grocery-analytics-head { display: grid; grid-template-columns: 48px minmax(0, 1fr); align-items: center; gap: 13px; }
+.grocery-analytics-icon { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 14px; color: var(--sage); background: color-mix(in oklab, var(--sage) 12%, var(--surface)); }
+.grocery-analytics-head h3 { margin: 3px 0; font-size: 19px; }
+.grocery-analytics-head p { margin: 0; color: var(--muted); font-size: 12px; }
+.grocery-analytics-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; margin-top: 18px; }
+.grocery-analytics-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 18px; margin-top: 18px; }
+.grocery-analytics-groups > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(100px, .8fr); align-items: center; gap: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.grocery-analytics-groups span { min-width: 0; display: grid; gap: 2px; }
+.grocery-analytics-groups strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.grocery-analytics-groups small { color: var(--muted); font-size: 10px; }
+
+@media (max-width: 1180px) and (min-width: 761px) {
+  .sidebar { gap: 8px; padding-inline: 16px; }
+  .sidebar .brand-block strong { font-size: 15px; }
+  .nav-item { padding-inline: 6px; }
+  .nav-item svg { display: none; }
+}
 
 .chart-parameter-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
 .chart-parameter-grid label { min-width: 0; display: grid; gap: 7px; padding: 13px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); transition: opacity 160ms ease, border-color 160ms ease; }
@@ -948,6 +1023,34 @@ body, :root[data-theme="dark"] body { background: var(--bg); }
   .confirm-card > div { align-items: stretch; flex-direction: column-reverse; }
   .confirm-card button { width: 100%; }
   .palette-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .transaction-amount-cell { grid-column: 3; grid-row: 1 / 3; max-width: 118px; }
+  .transaction-amount-cell .transaction-amount { grid-column: auto; grid-row: auto; }
+  .transaction-amount-cell small { max-width: 118px; white-space: normal; }
+  .grocery-hero { grid-template-columns: minmax(0, 1fr); padding: 20px; }
+  .grocery-hero .month-navigator { width: 100%; }
+  .grocery-summary, .grocery-analytics-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grocery-editor-card, .grocery-list-card { padding: 20px; }
+  .grocery-item-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grocery-item-form > label:first-child, .grocery-note-field, .grocery-item-form > .primary-button { grid-column: 1 / -1; }
+  .grocery-total-preview { grid-column: 1 / -1; }
+  .grocery-list-toolbar { align-items: stretch; flex-direction: column; }
+  .grocery-list-toolbar .secondary-button { width: 100%; }
+  .grocery-filter-chips { flex-wrap: nowrap; margin-inline: -20px; padding-inline: 20px; overflow-x: auto; scrollbar-width: none; }
+  .grocery-filter-chips::-webkit-scrollbar { display: none; }
+  .grocery-filter-chips button { flex: 0 0 auto; min-height: 44px; }
+  .grocery-group-head { align-items: flex-start; flex-direction: column; }
+  .grocery-group-head > span { text-align: left; }
+  .grocery-items article { grid-template-columns: minmax(0, 1fr) auto; gap: 11px; padding: 14px; }
+  .grocery-include { grid-column: 1 / -1; }
+  .grocery-quantity { grid-column: 1; }
+  .grocery-item-total { grid-column: 2; text-align: right; }
+  .grocery-bought { grid-column: 1; width: 100%; min-height: 48px; }
+  .grocery-row-actions { grid-column: 2; }
+  .grocery-row-actions button { width: 44px; height: 44px; }
+  .grocery-items article > p { grid-column: 1 / -1; margin: 0; }
+  .grocery-analytics-groups { grid-template-columns: minmax(0, 1fr); }
+  .expense-confirm-card > div { align-items: stretch; flex-direction: column-reverse; }
+  .expense-confirm-card > div button { width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
   .date-popover, .confirm-layer, .confirm-card { animation: none; }

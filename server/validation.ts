@@ -64,6 +64,19 @@ const categoryConfigSchema = z.object({
   "one-off": z.array(managedCategorySchema).max(100).optional(),
 });
 
+const groceryItemSchema = z.object({
+  id: shortText(128).min(1),
+  month: monthKey,
+  name: shortText(120).min(1),
+  groupName: shortText(80).min(1),
+  quantity: z.coerce.number().positive().max(100_000),
+  unit: shortText(32).min(1),
+  unitPrice: z.coerce.number().min(0).max(10_000_000).nullable().default(null),
+  included: z.boolean().default(true),
+  purchased: z.boolean().default(false),
+  note: shortText(240).default(""),
+});
+
 export const stateSchema = z.object({
   expenses: z.array(expenseSchema).max(25_000),
   archivedExpenses: z.array(archiveSchema).max(50_000).default([]),
@@ -87,6 +100,7 @@ export const stateSchema = z.object({
     barParameter: z.enum(["category", "payment", "frequency", "day"]).default("category"),
     trendParameter: z.enum(["daily", "cumulative", "budget", "payment"]).default("daily"),
   }).default({ pie: true, bar: true, trend: true, pieParameter: "payment", barParameter: "category", trendParameter: "daily" }),
+  groceryItems: z.array(groceryItemSchema).max(20_000).default([]),
   profilePhoto: z.string().max(500_000).refine((value) => !value || /^data:image\/(jpeg|png|webp);base64,/.test(value), "Invalid profile image").default(""),
 });
 

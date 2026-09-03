@@ -96,3 +96,30 @@ test("expense entry uses the modern calendar and settings expose twenty palettes
   assert.equal((settings.match(/\["[a-z-]+", "[^"]+"\]/g) || []).length, 23);
   assert.match(settings, /Calm Indigo/);
 });
+
+test("transactions show dates below amounts and edits use a confirmation popup", () => {
+  const row = appSource.slice(appSource.indexOf("function TransactionRow"), appSource.indexOf("function TransactionList"));
+  assert.match(row, /className="transaction-amount-cell"/);
+  assert.ok(row.indexOf("transaction-amount") < row.indexOf("{dateLabel}"));
+  const drawer = appSource.slice(appSource.indexOf("function ExpenseActionDialog"), appSource.indexOf("function LedgerApp"));
+  assert.match(drawer, /role="alertdialog"/);
+  assert.match(drawer, /Confirm expense update/);
+  assert.match(drawer, /Delete and archive/);
+  assert.doesNotMatch(drawer, /Before saving, acknowledge all 3 notices/);
+  assert.doesNotMatch(drawer, /edit-notice-/);
+});
+
+test("monthly grocery list is standalone, month-aware and analytically visible", () => {
+  assert.match(appSource, /id: "groceries", label: "Monthly Grocery List"/);
+  const grocery = appSource.slice(appSource.indexOf("function GroceryListView"), appSource.indexOf("function AccountCard"));
+  assert.match(grocery, /Add a grocery item/);
+  assert.match(grocery, /grocery-quantity/);
+  assert.match(grocery, /grocery-unit-price/);
+  assert.match(grocery, /Custom segregation/);
+  assert.match(grocery, /Included this month/);
+  assert.match(grocery, /Skipped this month/);
+  assert.match(grocery, /Copy \{monthLabel\(previousMonth\)\}/);
+  assert.match(grocery, /never enter spending or budget totals/);
+  assert.match(styles, /\.grocery-page/);
+  assert.match(styles, /\.grocery-analytics-card/);
+});

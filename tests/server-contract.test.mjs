@@ -17,7 +17,7 @@ test("protects every ledger state endpoint with an authenticated session", () =>
 });
 
 test("scopes finance records to a user and cascades account deletion", () => {
-  for (const model of ["Expense", "ExpenseArchive", "MonthlyBudget", "PaymentAccount", "UserPreference"]) {
+  for (const model of ["Expense", "ExpenseArchive", "MonthlyBudget", "PaymentAccount", "GroceryItem", "UserPreference"]) {
     const block = schema.slice(schema.indexOf(`model ${model}`), schema.indexOf("\n}", schema.indexOf(`model ${model}`)));
     assert.match(block, /userId\s+String/);
     assert.match(block, /onDelete: Cascade/);
@@ -46,6 +46,17 @@ test("persists category management and analytics module preferences", () => {
   assert.match(validation, /barParameter/);
   assert.match(validation, /trendParameter/);
   assert.match(validation, /calm-indigo/);
+});
+
+test("persists monthly grocery items outside expense records", async () => {
+  const repository = await readFile(new URL("server/state-repository.ts", root), "utf8");
+  assert.match(schema, /model GroceryItem/);
+  assert.match(schema, /month\s+String/);
+  assert.match(schema, /included\s+Boolean/);
+  assert.match(schema, /purchased\s+Boolean/);
+  assert.match(validation, /groceryItems: z\.array\(groceryItemSchema\)/);
+  assert.match(repository, /tx\.groceryItem\.createMany/);
+  assert.match(repository, /tx\.groceryItem\.deleteMany/);
 });
 
 test("uses strong password limits, database rate limiting and secure production cookies", () => {

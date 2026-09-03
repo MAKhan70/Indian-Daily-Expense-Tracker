@@ -7,6 +7,8 @@ import {
   DEFAULT_ANALYTICS_MODULES,
   DEFAULT_ADVANCES,
   DEFAULT_CREDITS,
+  GROCERY_GROUPS,
+  GROCERY_UNITS,
   PAYMENT_GROUPS,
   SEED_EXPENSES,
   createDefaultState,
@@ -131,7 +133,10 @@ test("creates a complete editable default budget and ledger state", () => {
   assert.deepEqual(state.appearance, { mode: "light", palette: "calm-indigo", look: "soft" });
   assert.deepEqual(state.categoryConfig, {});
   assert.deepEqual(state.analyticsModules, DEFAULT_ANALYTICS_MODULES);
+  assert.deepEqual(state.groceryItems, []);
   assert.equal(APPEARANCE_PALETTES.length, 20);
+  assert.ok(GROCERY_GROUPS.includes("Spices & Masala"));
+  assert.ok(GROCERY_UNITS.includes("kg"));
   assert.ok(state.expenses.every((expense) => CATEGORY_LIBRARY[expense.frequency].includes(expense.category)));
   assert.ok(state.expenses.every((expense) => CATEGORY_GROUPS[expense.frequency].some((group) => group.name === expense.categoryGroup && group.subcategories.includes(expense.subcategory))));
   const planned = state.expenses.filter(isPlannedExpense);

@@ -19,6 +19,8 @@ export const DISPLAY_MONTH = DISPLAY_DATE.slice(0, 7);
 export const APPEARANCE_PALETTES = ["calm-indigo", "heritage", "ocean", "forest", "rose", "saffron", "teal", "cobalt", "amethyst", "terracotta", "monsoon", "lotus", "sandstone", "mint", "slate", "copper", "berry", "lagoon", "marigold", "graphite"];
 export const APPEARANCE_DEFAULTS = { mode: "light", palette: "calm-indigo", look: "soft" };
 export const DEFAULT_ANALYTICS_MODULES = { pie: true, bar: true, trend: true, pieParameter: "payment", barParameter: "category", trendParameter: "daily" };
+export const GROCERY_GROUPS = ["General Grocery", "Grains & Flour", "Rice & Cereals", "Pulses & Lentils", "Spices & Masala", "Cooking Oils & Ghee", "Vegetables", "Fruits", "Dairy & Eggs", "Tea, Coffee & Beverages", "Snacks & Breakfast", "Dry Fruits & Nuts", "Household Cleaning", "Personal Care", "Baby & Pet Care", "Other"];
+export const GROCERY_UNITS = ["item", "kg", "g", "litre", "ml", "pack", "piece", "dozen", "bottle", "box", "bag"];
 
 export const QUICK_AMOUNTS = {
   daily: [5, 10, 20, 100],
@@ -351,6 +353,7 @@ export function createDefaultState() {
     appearance: { ...APPEARANCE_DEFAULTS },
     categoryConfig: {},
     analyticsModules: { ...DEFAULT_ANALYTICS_MODULES },
+    groceryItems: [],
     profilePhoto: "",
   };
 }
@@ -411,6 +414,18 @@ export function loadState() {
         barParameter: ["category", "payment", "frequency", "day"].includes(parsed.analyticsModules?.barParameter) ? parsed.analyticsModules.barParameter : "category",
         trendParameter: ["daily", "cumulative", "budget", "payment"].includes(parsed.analyticsModules?.trendParameter) ? parsed.analyticsModules.trendParameter : "daily",
       },
+      groceryItems: Array.isArray(parsed.groceryItems) ? parsed.groceryItems.map((item) => ({
+        id: String(item.id || crypto.randomUUID()),
+        month: isMonthKey(item.month) ? item.month : DISPLAY_MONTH,
+        name: String(item.name || "Grocery item"),
+        groupName: String(item.groupName || "General Grocery"),
+        quantity: Math.max(Number(item.quantity) || 1, 0.01),
+        unit: GROCERY_UNITS.includes(item.unit) ? item.unit : "item",
+        unitPrice: item.unitPrice === null || item.unitPrice === "" || !Number.isFinite(Number(item.unitPrice)) ? null : Math.max(Number(item.unitPrice), 0),
+        included: item.included !== false,
+        purchased: Boolean(item.purchased) && item.included !== false,
+        note: String(item.note || ""),
+      })) : [],
       profilePhoto: typeof parsed.profilePhoto === "string" && parsed.profilePhoto.startsWith("data:image/") ? parsed.profilePhoto : "",
     };
   } catch {

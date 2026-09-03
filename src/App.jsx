@@ -3,7 +3,7 @@ import { flushSync } from "react-dom";
 import {
   ArrowsClockwise, Bank, CalendarBlank, CaretDown, CaretLeft, CaretRight, CaretUp, ChartBar, ChartDonut,
   Camera, Check, CreditCard, DownloadSimple, GearSix, HandCoins, House, MagnifyingGlass,
-  List, Moon, PencilSimple, Plus, Receipt, ShoppingBag, Sparkle, Sun, Tag, Trash,
+  List, Moon, PencilSimple, Plus, Receipt, ShoppingBag, ShoppingCart, Sparkle, Sun, Tag, Trash,
   TrendDown, UserCircle, Wallet, X,
 } from "@phosphor-icons/react";
 import {
@@ -17,7 +17,7 @@ import "@fontsource/playfair-display/600.css";
 import {
   activeCategoryGroups, APPEARANCE_DEFAULTS, buildAliases, CATEGORY_LIBRARY, categoryGroupFor, createDefaultState, DEFAULT_ANALYTICS_MODULES, deleteExpenseWithArchive, DISPLAY_DATE, DISPLAY_MONTH,
   expensesForMonth, formatINR, FREQUENCIES, getBudgetForMonth, isAdvancePayment, isBudgetExpense, isCreditBorrow,
-  indiaDateKey, indiaGreeting, isDisplayMonth, ledgerUsageForMonth, loadState, managedCategoryGroups, monthLabel, PAYMENT_GROUPS, QUICK_AMOUNTS, restoreCategoryOrder, shiftMonthKey, STORAGE_KEY, titleCaseDate,
+  GROCERY_GROUPS, GROCERY_UNITS, indiaDateKey, indiaGreeting, isDisplayMonth, ledgerUsageForMonth, loadState, managedCategoryGroups, monthLabel, PAYMENT_GROUPS, QUICK_AMOUNTS, restoreCategoryOrder, shiftMonthKey, STORAGE_KEY, titleCaseDate,
   upsertExpenseWithArchive, withBudgetForMonth,
 } from "./domain.js";
 import { LedgerView } from "./LedgerView.jsx";
@@ -29,6 +29,7 @@ const NAV_ITEMS = [
   { id: "transactions", label: "Transactions", icon: Receipt },
   { id: "ledger", label: "Ledger", icon: CalendarBlank },
   { id: "budget", label: "Budget & Ledgers", icon: ChartDonut },
+  { id: "groceries", label: "Monthly Grocery List", icon: ShoppingCart },
   { id: "categories", label: "Categories", icon: Tag },
   { id: "reports", label: "Analytics", icon: ChartBar },
   { id: "settings", label: "Settings", icon: GearSix },
@@ -118,7 +119,8 @@ function Header({ active, onAdd, onToggleMenu, menuOpen, user }) {
   const accountName = String(user?.name || "").trim();
   const userName = accountName || String(user?.email?.split("@")[0] || "there").trim();
   const heading = active === "dashboard" ? `${indiaGreeting(now)}, ${userName}` : label;
-  return <header className="page-header"><button id="mobile-menu-trigger" className="mobile-menu" onClick={onToggleMenu} aria-label="Open navigation menu" aria-expanded={menuOpen} aria-controls="mobile-navigation-drawer"><List size={23} weight="bold" /></button><div><p>{titleCaseDate(indiaDateKey(now))} · IST</p><h1>{heading}</h1><span>{active === "dashboard" ? "A clear view of today, this month, and what comes next." : "Keep every rupee clear and accounted for."}</span></div><button className="primary-button header-add" onClick={onAdd}><Plus size={19} weight="bold" /> Log expense</button></header>;
+  const subtitle = active === "dashboard" ? "A clear view of today, this month, and what comes next." : active === "groceries" ? "Plan household essentials separately from your expense ledger." : "Keep every rupee clear and accounted for.";
+  return <header className="page-header"><button id="mobile-menu-trigger" className="mobile-menu" onClick={onToggleMenu} aria-label="Open navigation menu" aria-expanded={menuOpen} aria-controls="mobile-navigation-drawer"><List size={23} weight="bold" /></button><div><p>{titleCaseDate(indiaDateKey(now))} · IST</p><h1>{heading}</h1><span>{subtitle}</span></div>{active !== "groceries" && <button className="primary-button header-add" onClick={onAdd}><Plus size={19} weight="bold" /> Log expense</button>}</header>;
 }
 
 function MobileMenuDrawer({ active, onNavigate, onClose, dark, onToggleDark, profilePhoto, onProfilePhoto }) {
@@ -152,7 +154,9 @@ function SpendingMix({ expenses, frequency }) {
 
 function TransactionRow({ expense, aliases, onEdit }) {
   const Icon = paymentIcon(expense.payment);
-  return <button className="transaction-row" onClick={() => onEdit(expense)} aria-label={`Edit ${expense.name}, ${formatINR(expense.amount)}`}><span className={`transaction-icon ${expense.color || "sage"}`}><Icon size={19} weight="duotone" /></span><span className="transaction-name"><strong>{expense.name}</strong><small>{expense.merchant || expense.category}</small></span><span className="transaction-payment"><Icon size={17} /> {aliases[expense.payment] || expense.payment}</span><span className="transaction-time"><b className={`frequency-badge ${expense.frequency}`}>{FREQUENCY_LABELS[expense.frequency]}</b><small>{expense.date === DISPLAY_DATE ? "Today" : expense.date}</small></span><strong className="transaction-amount">−{formatINR(expense.amount)}</strong><PencilSimple className="transaction-edit" size={16} /></button>;
+  const shortDate = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }).format(new Date(`${expense.date}T12:00:00+05:30`));
+  const dateLabel = expense.date === DISPLAY_DATE ? `Today · ${shortDate}` : shortDate;
+  return <button className="transaction-row" onClick={() => onEdit(expense)} aria-label={`Edit ${expense.name}, ${formatINR(expense.amount)}, added ${titleCaseDate(expense.date)}`}><span className={`transaction-icon ${expense.color || "sage"}`}><Icon size={19} weight="duotone" /></span><span className="transaction-name"><strong>{expense.name}</strong><small>{expense.merchant || expense.category}</small></span><span className="transaction-payment"><Icon size={17} /> {aliases[expense.payment] || expense.payment}</span><span className="transaction-time"><b className={`frequency-badge ${expense.frequency}`}>{FREQUENCY_LABELS[expense.frequency]}</b><small>{expense.time}</small></span><span className="transaction-amount-cell"><strong className="transaction-amount">−{formatINR(expense.amount)}</strong><small>{dateLabel}</small></span><PencilSimple className="transaction-edit" size={16} /></button>;
 }
 
 function TransactionList({ expenses, aliases, onEdit, limit }) {
@@ -171,6 +175,89 @@ function TransactionsView({ expenses, aliases, frequency, onEdit, onAdd }) {
   const [payment, setPayment] = useState("all");
   const filtered = expenses.filter((expense) => { const matchesText = `${expense.name} ${expense.merchant} ${expense.category}`.toLowerCase().includes(query.toLowerCase()); return expense.frequency === frequency && matchesText && (payment === "all" || expense.payment === payment); });
   return <section className="module-card"><div className="module-toolbar"><label className="search-field"><MagnifyingGlass size={19} /><span className="visually-hidden">Search expenses</span><input name="expense-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${FREQUENCY_LABELS[frequency].toLowerCase()} expenses`} /></label><label className="compact-select"><span className="visually-hidden">Filter by payment method</span><select name="payment-filter" value={payment} onChange={(event) => setPayment(event.target.value)}><option value="all">All payment methods</option>{PAYMENT_GROUPS.map((group) => <optgroup label={group.label} key={group.label}>{group.options.map(([id]) => <option value={id} key={id}>{aliases[id]}</option>)}</optgroup>)}</select></label><button className="primary-button" onClick={onAdd}><Plus size={18} /> Add expense</button></div><p className="result-count">{filtered.length} {FREQUENCY_LABELS[frequency].toLowerCase()} {filtered.length === 1 ? "expense" : "expenses"}</p><TransactionList expenses={filtered} aliases={aliases} onEdit={onEdit} /></section>;
+}
+
+const groceryTotal = (item) => item.unitPrice === null || item.unitPrice === "" ? null : Number(item.quantity || 0) * Number(item.unitPrice || 0);
+const emptyGroceryDraft = (month) => ({ id: "", month, name: "", groupName: "General Grocery", quantity: "1", unit: "kg", unitPrice: "", included: true, purchased: false, note: "" });
+
+function GroceryListView({ groceryItems, onSave, onChange, onDelete, onCopyPrevious }) {
+  const [selectedMonth, setSelectedMonth] = useState(DISPLAY_MONTH);
+  const [query, setQuery] = useState("");
+  const [groupFilter, setGroupFilter] = useState("all");
+  const [draft, setDraft] = useState(() => emptyGroceryDraft(DISPLAY_MONTH));
+  const [customGroup, setCustomGroup] = useState("");
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const monthItems = groceryItems.filter((item) => item.month === selectedMonth);
+  const availableGroups = [...new Set([...GROCERY_GROUPS, ...monthItems.map((item) => item.groupName)])];
+  const visibleItems = monthItems.filter((item) => (groupFilter === "all" || item.groupName === groupFilter) && `${item.name} ${item.groupName} ${item.note}`.toLowerCase().includes(query.toLowerCase()));
+  const groupedItems = Object.entries(visibleItems.reduce((groups, item) => { (groups[item.groupName] ||= []).push(item); return groups; }, {})).sort(([a], [b]) => a.localeCompare(b));
+  const included = monthItems.filter((item) => item.included);
+  const purchased = included.filter((item) => item.purchased);
+  const skipped = monthItems.filter((item) => !item.included);
+  const estimated = included.reduce((sum, item) => sum + (groceryTotal(item) || 0), 0);
+  const previousMonth = shiftMonthKey(selectedMonth, -1);
+  const previousCount = groceryItems.filter((item) => item.month === previousMonth).length;
+  const calculatedTotal = draft.unitPrice === "" ? null : Number(draft.quantity || 0) * Number(draft.unitPrice || 0);
+  const setDraftField = (key, value) => setDraft((current) => ({ ...current, [key]: value }));
+  const changeMonth = (month) => { setSelectedMonth(month); setDraft(emptyGroceryDraft(month)); setCustomGroup(""); setGroupFilter("all"); };
+  const editItem = (item) => { const custom = !GROCERY_GROUPS.includes(item.groupName); setDraft({ ...item, groupName: custom ? "__custom__" : item.groupName, quantity: String(item.quantity), unitPrice: item.unitPrice === null ? "" : String(item.unitPrice) }); setCustomGroup(custom ? item.groupName : ""); window.setTimeout(() => document.getElementById("grocery-item-name")?.focus(), 0); };
+  const resetDraft = () => { setDraft(emptyGroceryDraft(selectedMonth)); setCustomGroup(""); };
+  const submit = (event) => {
+    event.preventDefault();
+    const groupName = draft.groupName === "__custom__" ? customGroup.trim() : draft.groupName;
+    if (!groupName) return;
+    onSave({
+      ...draft,
+      id: draft.id || crypto.randomUUID(),
+      month: selectedMonth,
+      name: draft.name.trim(),
+      groupName,
+      quantity: Number(draft.quantity),
+      unitPrice: draft.unitPrice === "" ? null : Number(draft.unitPrice),
+      note: draft.note.trim(),
+      purchased: draft.included ? Boolean(draft.purchased) : false,
+    });
+    resetDraft();
+  };
+  return <div className="grocery-page">
+    <section className="grocery-hero module-card">
+      <div><span className="eyebrow">Standalone monthly planner</span><h2>{monthLabel(selectedMonth)} grocery list</h2><p>Plan household purchases without adding anything to expenses. Include, skip and mark items bought month by month.</p></div>
+      <MonthNavigator value={selectedMonth} onChange={changeMonth} label="Monthly grocery list month" />
+      <div className="grocery-summary" aria-label="Monthly grocery summary"><span><small>Included</small><strong>{included.length}</strong></span><span><small>Purchased</small><strong>{purchased.length}</strong></span><span><small>Skipped</small><strong>{skipped.length}</strong></span><span><small>Estimated list</small><strong>{estimated ? formatINR(estimated) : "—"}</strong></span></div>
+    </section>
+
+    <section className="module-card grocery-editor-card">
+      <div className="category-header"><div><span className="eyebrow">{draft.id ? "Update item" : "Build your list"}</span><h2>{draft.id ? `Edit ${draft.name}` : "Add a grocery item"}</h2><p className="module-subtitle">Price is optional. When supplied, total cost is calculated from quantity × unit price.</p></div>{draft.id && <button type="button" className="text-button" onClick={resetDraft}>Cancel editing</button>}</div>
+      <form action="#" onSubmit={submit} className="grocery-item-form">
+        <label htmlFor="grocery-item-name"><span>Item</span><input id="grocery-item-name" name="grocery-item-name" value={draft.name} onChange={(event) => setDraftField("name", event.target.value)} placeholder="e.g. Wheat Flour" maxLength="120" autoComplete="off" required /></label>
+        <label htmlFor="grocery-group"><span>Segregation</span><select id="grocery-group" name="grocery-group" value={draft.groupName} onChange={(event) => setDraftField("groupName", event.target.value)}>{GROCERY_GROUPS.map((group) => <option key={group}>{group}</option>)}<option value="__custom__">Custom segregation…</option></select></label>
+        {draft.groupName === "__custom__" && <label htmlFor="grocery-custom-group"><span>Custom segregation</span><input id="grocery-custom-group" name="grocery-custom-group" value={customGroup} onChange={(event) => setCustomGroup(event.target.value)} placeholder="e.g. Festival supplies" maxLength="80" required /></label>}
+        <label htmlFor="grocery-quantity"><span>Quantity</span><input id="grocery-quantity" name="grocery-quantity" type="number" inputMode="decimal" min="0.01" max="100000" step="0.01" value={draft.quantity} onChange={(event) => setDraftField("quantity", event.target.value)} required /></label>
+        <label htmlFor="grocery-unit"><span>Unit</span><select id="grocery-unit" name="grocery-unit" value={draft.unit} onChange={(event) => setDraftField("unit", event.target.value)}>{GROCERY_UNITS.map((unit) => <option key={unit}>{unit}</option>)}</select></label>
+        <label htmlFor="grocery-unit-price"><span>Price per unit <small>Optional</small></span><input id="grocery-unit-price" name="grocery-unit-price" type="number" inputMode="decimal" min="0" max="10000000" step="0.01" value={draft.unitPrice} onChange={(event) => setDraftField("unitPrice", event.target.value)} placeholder="₹45" /></label>
+        <label className="grocery-note-field" htmlFor="grocery-note"><span>Note <small>Optional</small></span><input id="grocery-note" name="grocery-note" value={draft.note} onChange={(event) => setDraftField("note", event.target.value)} placeholder="Brand, shop or reminder" maxLength="240" /></label>
+        <div className="grocery-total-preview"><span>Calculated total</span><strong>{calculatedTotal === null ? "Add a price to estimate" : formatINR(calculatedTotal)}</strong></div>
+        <button type="submit" className="primary-button"><Check size={18} weight="bold" /> {draft.id ? "Save item changes" : "Add to monthly list"}</button>
+      </form>
+    </section>
+
+    <section className="module-card grocery-list-card">
+      <div className="grocery-list-toolbar"><label className="search-field"><MagnifyingGlass size={19} /><span className="visually-hidden">Search grocery items</span><input name="grocery-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search this monthly list" /></label><button type="button" className="secondary-button" onClick={() => onCopyPrevious(selectedMonth)} disabled={Boolean(monthItems.length) || !previousCount}><ArrowsClockwise size={18} /> Copy {monthLabel(previousMonth)}</button></div>
+      <div className="grocery-filter-chips" role="group" aria-label="Filter grocery segregation"><button type="button" className={groupFilter === "all" ? "active" : ""} onClick={() => setGroupFilter("all")} aria-pressed={groupFilter === "all"}>All</button>{availableGroups.filter((group) => monthItems.some((item) => item.groupName === group)).map((group) => <button type="button" key={group} className={groupFilter === group ? "active" : ""} onClick={() => setGroupFilter(group)} aria-pressed={groupFilter === group}>{group}</button>)}</div>
+      {groupedItems.length ? <div className="grocery-groups">{groupedItems.map(([group, items]) => <section className="grocery-group" key={group}><div className="grocery-group-head"><div><ShoppingBag size={19} weight="duotone" /><strong>{group}</strong></div><span>{items.filter((item) => item.included).length} included · {formatINR(items.reduce((sum, item) => sum + (item.included ? groceryTotal(item) || 0 : 0), 0))}</span></div><div className="grocery-items">{items.map((item) => { const total = groceryTotal(item); return <article className={`${item.included ? "" : "skipped"} ${item.purchased ? "purchased" : ""}`.trim()} key={item.id}><label className="grocery-include" htmlFor={`include-${item.id}`}><input id={`include-${item.id}`} name={`include-${item.id}`} type="checkbox" checked={item.included} onChange={(event) => onChange(item.id, { included: event.target.checked, purchased: event.target.checked ? item.purchased : false })} /><span><strong>{item.name}</strong><small>{item.included ? "Included this month" : "Skipped this month"}</small></span></label><div className="grocery-quantity"><strong>{item.quantity} {item.unit}</strong><small>{item.unitPrice === null ? "Price not added" : `${formatINR(item.unitPrice)} per unit`}</small></div><div className="grocery-item-total"><strong>{total === null ? "—" : formatINR(total)}</strong><small>Total cost</small></div><button type="button" className={item.purchased ? "grocery-bought active" : "grocery-bought"} onClick={() => onChange(item.id, { purchased: !item.purchased })} disabled={!item.included} aria-pressed={item.purchased}><Check size={16} weight="bold" /> {item.purchased ? "Bought" : "Mark bought"}</button><div className="grocery-row-actions"><button type="button" onClick={() => editItem(item)} aria-label={`Edit ${item.name}`}><PencilSimple size={17} /></button><button type="button" className="delete-custom" onClick={() => setPendingDelete(item)} aria-label={`Delete ${item.name}`}><Trash size={17} /></button></div>{item.note && <p>{item.note}</p>}</article>; })}</div></section>)}</div> : <div className="empty-state grocery-empty"><ShoppingCart size={34} weight="duotone" /><strong>{monthItems.length ? "No items match this filter" : `No grocery list for ${monthLabel(selectedMonth)}`}</strong><span>{monthItems.length ? "Try another search or segregation." : previousCount ? `Copy ${monthLabel(previousMonth)} or add your first item above.` : "Add your first household item above."}</span></div>}
+    </section>
+    {pendingDelete && <div className="confirm-layer" role="presentation"><section className="confirm-card" role="alertdialog" aria-modal="true" aria-labelledby="delete-grocery-title"><span className="confirm-icon"><Trash size={22} /></span><h2 id="delete-grocery-title">Delete “{pendingDelete.name}”?</h2><p>This removes the item only from the {monthLabel(pendingDelete.month)} grocery list. It does not change any expense or budget.</p><div><button type="button" className="secondary-button" onClick={() => setPendingDelete(null)} autoFocus>Keep item</button><button type="button" className="danger-button" onClick={() => { onDelete(pendingDelete.id); setPendingDelete(null); }}>Delete item</button></div></section></div>}
+  </div>;
+}
+
+function GroceryAnalytics({ groceryItems, selectedMonth }) {
+  const items = groceryItems.filter((item) => item.month === selectedMonth);
+  const included = items.filter((item) => item.included);
+  const purchased = included.filter((item) => item.purchased);
+  const skipped = items.filter((item) => !item.included);
+  const estimate = included.reduce((sum, item) => sum + (groceryTotal(item) || 0), 0);
+  const groups = Object.values(items.reduce((rows, item) => { const row = rows[item.groupName] || { name: item.groupName, total: 0, included: 0, skipped: 0, purchased: 0 }; rows[item.groupName] = { ...row, total: row.total + 1, included: row.included + Number(item.included), skipped: row.skipped + Number(!item.included), purchased: row.purchased + Number(item.included && item.purchased) }; return rows; }, {})).sort((a, b) => b.total - a.total);
+  return <section className="grocery-analytics-card" aria-labelledby="grocery-analytics-title"><div className="grocery-analytics-head"><span className="grocery-analytics-icon"><ShoppingCart size={23} weight="duotone" /></span><div><span className="eyebrow">Standalone list analytics</span><h3 id="grocery-analytics-title">Monthly Grocery List</h3><p>Planning signals only—these values never enter spending or budget totals.</p></div></div><div className="grocery-analytics-stats"><span><small>Included</small><strong>{included.length}</strong></span><span><small>Purchased</small><strong>{purchased.length}</strong></span><span><small>Skipped</small><strong>{skipped.length}</strong></span><span><small>Estimated</small><strong>{estimate ? formatINR(estimate) : "—"}</strong></span></div>{groups.length ? <div className="grocery-analytics-groups">{groups.map((group) => <div key={group.name}><span><strong>{group.name}</strong><small>{group.purchased} bought · {group.skipped} skipped</small></span><progress max={Math.max(group.included, 1)} value={group.purchased} aria-label={`${group.name}: ${group.purchased} of ${group.included} included items purchased`} /></div>)}</div> : <div className="chart-empty compact">No grocery list activity is available for {monthLabel(selectedMonth)}.</div>}</section>;
 }
 
 function AccountCard({ account, kind, used, onChange }) {
@@ -276,7 +363,7 @@ function CategoriesView({ expenses, frequency, categoryConfig, onChange, onReset
   </div>;
 }
 
-function ReportsView({ expenses, aliases, monthlyBudget, monthlyBudgets, analyticsModules, onModulesChange, onEdit }) {
+function ReportsView({ expenses, aliases, monthlyBudget, monthlyBudgets, groceryItems, analyticsModules, onModulesChange, onEdit }) {
   const [selectedMonth, setSelectedMonth] = useState(DISPLAY_MONTH);
   const [frequency, setFrequency] = useState("all");
   const [selectedMethod, setSelectedMethod] = useState(null);
@@ -351,6 +438,8 @@ function ReportsView({ expenses, aliases, monthlyBudget, monthlyBudgets, analyti
 
     <section className="ai-analysis-card" aria-labelledby="ai-analysis-title"><div className="ai-analysis-head"><span className="ai-orb"><Sparkle size={23} weight="fill" /></span><div><span className="eyebrow">Private intelligence</span><h3 id="ai-analysis-title">AI Analysis</h3><p>On-device insight engine · only aggregated totals are analysed · nothing is sent outside Pocket Ledger.</p></div><span className="analysis-confidence">{scoped.length >= 10 ? "Strong signal" : scoped.length ? "Early signal" : "Awaiting data"}</span></div><div className="ai-insight-grid">{aiInsights.map((insight) => <article className={`ai-insight ${insight.tone}`} key={insight.label}><span>{insight.label}</span><strong>{insight.title}</strong><p>{insight.detail}</p></article>)}</div><p className="ai-disclaimer">Analysis highlights patterns, not financial advice. Review your transactions before making decisions.</p></section>
 
+    <GroceryAnalytics groceryItems={groceryItems} selectedMonth={selectedMonth} />
+
     <div className={`chart-grid visible-${enabledModuleCount}`}>
       {modules.pie && <article className="chart-card"><div className="chart-heading"><div><span>Pie chart</span><h3>{parameterLabel(modules.pieParameter)} mix</h3></div><strong>{pieData.length} segments</strong></div>{pieData.length ? <><div className="chart-canvas" aria-hidden="true"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={pieData} dataKey="value" nameKey="name" innerRadius="48%" outerRadius="78%" paddingAngle={2} isAnimationActive={false}>{pieData.map((item, index) => <Cell key={item.name} fill={CHART_COLORS[index % CHART_COLORS.length]} />)}</Pie><Tooltip content={<CurrencyTooltip />} /></PieChart></ResponsiveContainer></div><div className="chart-legend">{pieData.map((item, index) => <span key={item.name}><i className={`chart-swatch tone-${index % CHART_COLORS.length}`} />{item.name}<b>{formatINR(item.value)}</b></span>)}</div><AccessibleDataTable caption={`${monthLabel(selectedMonth)} ${parameterLabel(modules.pieParameter)} totals`} columns={[parameterLabel(modules.pieParameter), "Amount"]} rows={pieData.map((item) => [item.name, formatINR(item.value)])} /></> : <div className="chart-empty">No activity is available for this view.</div>}</article>}
       {modules.bar && <article className="chart-card"><div className="chart-heading"><div><span>Bar chart</span><h3>Top {parameterLabel(modules.barParameter).toLowerCase()}</h3></div><strong>{barData.length} shown</strong></div>{barData.length ? <><div className="chart-canvas" aria-hidden="true"><ResponsiveContainer width="100%" height="100%"><BarChart data={barData} layout="vertical" margin={{ top: 4, right: 12, bottom: 4, left: 6 }}><CartesianGrid stroke="var(--chart-grid)" horizontal={false} /><XAxis type="number" tickFormatter={(value) => `₹${Math.round(value / 1000)}k`} tick={{ fill: "var(--muted)", fontSize: 11 }} /><YAxis type="category" dataKey="name" width={105} tick={{ fill: "var(--muted)", fontSize: 10 }} tickLine={false} axisLine={false} /><Tooltip content={<CurrencyTooltip />} /><Bar dataKey="amount" name="Spend" fill="var(--sage)" radius={[0, 7, 7, 0]} isAnimationActive={false} /></BarChart></ResponsiveContainer></div><AccessibleDataTable caption={`${monthLabel(selectedMonth)} ${parameterLabel(modules.barParameter)} totals`} columns={[parameterLabel(modules.barParameter), "Amount"]} rows={barData.map((item) => [item.name, formatINR(item.amount)])} /></> : <div className="chart-empty">No activity is available for this view.</div>}</article>}
@@ -395,11 +484,30 @@ function ModernDatePicker({ value, onChange }) {
   </div>;
 }
 
-function AddExpenseDrawer({ expense, aliases, defaultFrequency, initialDate = DISPLAY_DATE, defaultStatus = "actual", requiresDisclaimers = false, monthlyBudget, monthlyBudgets, advanceAccounts, creditAccounts, categoryConfig, allExpenses, onClose, onSave, onDelete }) {
+function ExpenseActionDialog({ action, expense, onCancel, onConfirm }) {
+  const deleting = action === "delete";
+  useEffect(() => {
+    const closeOnEscape = (event) => event.key === "Escape" && onCancel();
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [onCancel]);
+  const notices = deleting ? [
+    "The active expense will be removed from your ledger.",
+    "A read-only copy will be retained under Ledger → Archived.",
+    "Budgets, merchant balances and analytics will recalculate after deletion.",
+  ] : [
+    "The revised details will replace the active ledger value.",
+    "The current value will be retained as a read-only entry under Ledger → Archived.",
+    "Budgets, merchant balances and analytics will recalculate from the revised value.",
+  ];
+  return <div className="confirm-layer expense-action-dialog" role="presentation"><section className="confirm-card expense-confirm-card" role="alertdialog" aria-modal="true" aria-labelledby="expense-confirm-title" aria-describedby="expense-confirm-description"><span className="confirm-icon">{deleting ? <Trash size={22} /> : <PencilSimple size={22} />}</span><span className="eyebrow">Archive protection</span><h2 id="expense-confirm-title">{deleting ? "Delete this recorded expense?" : "Confirm expense update"}</h2><p id="expense-confirm-description"><strong>{expense.name}</strong> · {formatINR(expense.amount)} · {titleCaseDate(expense.date)}</p><ol>{notices.map((notice) => <li key={notice}>{notice}</li>)}</ol><div><button type="button" className="secondary-button" onClick={onCancel} autoFocus>{deleting ? "Keep expense" : "Continue editing"}</button><button type="button" className={deleting ? "danger-button" : "primary-button"} onClick={onConfirm}>{deleting ? "Delete and archive" : "Confirm and save"}</button></div></section></div>;
+}
+
+function AddExpenseDrawer({ expense, aliases, defaultFrequency, initialDate = DISPLAY_DATE, defaultStatus = "actual", monthlyBudget, monthlyBudgets, advanceAccounts, creditAccounts, categoryConfig, allExpenses, onClose, onSave, onDelete }) {
   const editing = Boolean(expense);
   const [form, setForm] = useState(() => { const firstGroup = activeCategoryGroups(categoryConfig, defaultFrequency)[0]; const firstSubcategory = firstGroup.subcategories[0].name; return expense || { amount: "", name: "", merchant: "", categoryGroup: firstGroup.name, category: firstSubcategory, subcategory: firstSubcategory, frequency: defaultFrequency, date: initialDate, time: "12:00", payment: "cash", status: defaultStatus, planNote: "", reminder: "both" }; });
   const [errors, setErrors] = useState({});
-  const [acknowledged, setAcknowledged] = useState([false, false, false]);
+  const [pendingAction, setPendingAction] = useState(null);
   const set = (key, value) => setForm((current) => ({ ...current, [key]: value }));
   const availableGroups = activeCategoryGroups(categoryConfig, form.frequency);
   const selectableGroups = availableGroups.some((group) => group.name === form.categoryGroup) ? availableGroups : [...availableGroups, { id: "existing-category", name: form.categoryGroup, subcategories: [{ id: "existing-subcategory", name: form.category, enabled: true }] }];
@@ -414,17 +522,12 @@ function AddExpenseDrawer({ expense, aliases, defaultFrequency, initialDate = DI
   const baseBudgetSpent = allExpenses.filter((item) => item.id !== expense?.id && String(item.date).startsWith(formMonth) && isBudgetExpense(item)).reduce((sum, item) => sum + Number(item.amount), 0);
   const projectedBudgetSpent = baseBudgetSpent + (isBudgetExpense(form) && !isFuture ? Number(form.amount) || 0 : 0);
   const ledgerUsed = (payment) => allExpenses.filter((item) => item.payment === payment && item.id !== expense?.id).reduce((sum, item) => sum + Number(item.amount), 0) + (Number(form.amount) || 0);
-  const submit = (event) => { event.preventDefault(); const nextErrors = {}; if (!Number(form.amount) || Number(form.amount) <= 0) nextErrors.amount = "Enter an amount greater than zero."; if (Number(form.amount) > 10000000) nextErrors.amount = "Amount must be below ₹1,00,00,000."; if (!form.payment) nextErrors.payment = "Choose a payment method."; if (editing && requiresDisclaimers && acknowledged.some((value) => !value)) nextErrors.disclaimers = "Please acknowledge all three edit notices before saving."; setErrors(nextErrors); if (Object.keys(nextErrors).length) return; onSave({ ...form, amount: Number(form.amount), name: form.name.trim() || form.category, merchant: form.merchant.trim(), categoryGroup: form.categoryGroup || categoryGroupFor(form.frequency, form.category), category: form.category, subcategory: form.category, status: isFuture ? "planned" : "actual", planNote: isFuture ? (form.planNote || "").trim() : "", reminder: isFuture ? (form.reminder || "both") : "none", id: form.id || crypto.randomUUID(), color: form.color || "sage" }); };
-  useEffect(() => { const closeOnEscape = (event) => { if (event.key === "Escape" && !document.querySelector(".date-popover")) onClose(); }; window.addEventListener("keydown", closeOnEscape); return () => window.removeEventListener("keydown", closeOnEscape); }, [onClose]);
+  const submit = (event) => { event.preventDefault(); const nextErrors = {}; if (!Number(form.amount) || Number(form.amount) <= 0) nextErrors.amount = "Enter an amount greater than zero."; if (Number(form.amount) > 10000000) nextErrors.amount = "Amount must be below ₹1,00,00,000."; if (!form.payment) nextErrors.payment = "Choose a payment method."; setErrors(nextErrors); if (Object.keys(nextErrors).length) return; const nextExpense = { ...form, amount: Number(form.amount), name: form.name.trim() || form.category, merchant: form.merchant.trim(), categoryGroup: form.categoryGroup || categoryGroupFor(form.frequency, form.category), category: form.category, subcategory: form.category, status: isFuture ? "planned" : "actual", planNote: isFuture ? (form.planNote || "").trim() : "", reminder: isFuture ? (form.reminder || "both") : "none", id: form.id || crypto.randomUUID(), color: form.color || "sage" }; if (editing) setPendingAction({ type: "save", expense: nextExpense }); else onSave(nextExpense); };
+  useEffect(() => { const closeOnEscape = (event) => { if (event.key === "Escape" && !document.querySelector(".date-popover, .expense-action-dialog")) onClose(); }; window.addEventListener("keydown", closeOnEscape); return () => window.removeEventListener("keydown", closeOnEscape); }, [onClose]);
   let impact = <><span>{monthLabel(formMonth)} budget after this expense</span><strong>{formatINR(projectedBudgetSpent)} used <b>{formatINR(Math.max(targetBudget - projectedBudgetSpent, 0))} left</b></strong></>;
   if (selectedAdvance) impact = <><span>Advance ledger · {selectedAdvance.merchant || "Merchant not named"}</span><strong>{formatINR(ledgerUsed(form.payment))} used <b>{formatINR(Math.max(Number(selectedAdvance.amountPaid) - ledgerUsed(form.payment), 0))} available</b></strong></>;
   if (selectedCredit) impact = <><span>Credit ledger · {selectedCredit.merchant || "Merchant not named"}</span><strong>{formatINR(ledgerUsed(form.payment))} borrowed <b>{formatINR(Math.max(Number(selectedCredit.creditLimit) - ledgerUsed(form.payment), 0))} available</b></strong></>;
   if (isFuture) impact = <><span>Planned expense · not counted as completed spending</span><strong>{formatINR(Number(form.amount) || 0)} planned <b>{form.reminder === "week" ? "1-week alert" : form.reminder === "month" ? "1-month alert" : form.reminder === "none" ? "No alert" : "Month + week alerts"}</b></strong></>;
-  const editNotices = [
-    "I understand this will replace the active ledger value.",
-    "I understand the previous value will be retained under Archived.",
-    "I understand budgets, balances and analytics will recalculate from the revised value.",
-  ];
   return (
     <div className="drawer-layer" role="presentation">
       <button className="drawer-backdrop" onClick={onClose} aria-label="Close expense form" />
@@ -445,10 +548,10 @@ function AddExpenseDrawer({ expense, aliases, defaultFrequency, initialDate = DI
           <details className="optional-details"><summary>Merchant and optional details</summary><label htmlFor="expense-merchant"><span>Merchant / shop <small>Optional</small></span><input id="expense-merchant" name="merchant" value={form.merchant} onChange={(event) => set("merchant", event.target.value)} placeholder="e.g. neighbourhood store" maxLength="80" /></label></details>
           {isFuture && <fieldset className="planned-fields"><legend>Planned expense reminder</legend><label htmlFor="plan-note"><span>Reminder note</span><textarea id="plan-note" name="plan-note" value={form.planNote || ""} onChange={(event) => set("planNote", event.target.value)} placeholder="What should you check or prepare before this expense?" maxLength="240" rows="3" /></label><label htmlFor="plan-reminder"><span>Notify me inside Ledger</span><select id="plan-reminder" name="reminder" value={form.reminder || "both"} onChange={(event) => set("reminder", event.target.value)}><option value="both">One month before and one week before</option><option value="month">One month before</option><option value="week">One week before</option><option value="none">No reminder</option></select></label></fieldset>}
           <div className={`impact-note ${selectedAdvance || selectedCredit || isFuture ? "special" : ""}`}>{impact}</div>
-          {editing && requiresDisclaimers && <fieldset className="edit-disclaimers" aria-describedby={errors.disclaimers ? "disclaimer-error" : undefined}><legend>Before saving, acknowledge all 3 notices</legend>{editNotices.map((notice, index) => <label key={notice}><input type="checkbox" name={`edit-notice-${index + 1}`} checked={acknowledged[index]} onChange={(event) => setAcknowledged((current) => current.map((value, itemIndex) => itemIndex === index ? event.target.checked : value))} /><span>{index + 1}. {notice}</span></label>)}{errors.disclaimers && <small id="disclaimer-error" className="field-error" role="alert">{errors.disclaimers}</small>}</fieldset>}
-          <div className="drawer-actions">{editing && <button type="button" className="delete-button" onClick={() => onDelete(expense.id)}><Trash size={17} /> Delete</button>}<button type="button" className="secondary-button" onClick={onClose}>Cancel</button><button type="submit" className="primary-button"><Check size={18} weight="bold" /> {editing ? "Save and archive old" : isFuture ? "Save planned expense" : "Save expense"}</button></div>
+          <div className="drawer-actions">{editing && <button type="button" className="delete-button" onClick={() => setPendingAction({ type: "delete" })}><Trash size={17} /> Delete</button>}<button type="button" className="secondary-button" onClick={onClose}>Cancel</button><button type="submit" className="primary-button"><Check size={18} weight="bold" /> {editing ? "Review and save" : isFuture ? "Save planned expense" : "Save expense"}</button></div>
         </form>
       </aside>
+      {pendingAction && <ExpenseActionDialog action={pendingAction.type} expense={pendingAction.expense || expense} onCancel={() => setPendingAction(null)} onConfirm={() => pendingAction.type === "delete" ? onDelete(expense.id) : onSave(pendingAction.expense)} />}
     </div>
   );
 }
@@ -458,7 +561,7 @@ function LedgerApp({ initialState, user }) {
   const initialParams = useMemo(() => new URLSearchParams(window.location.search), []);
   const [active, setActive] = useState(() => { const requested = initialParams.get("view") === "calendar" ? "ledger" : initialParams.get("view"); return NAV_ITEMS.some((item) => item.id === requested) ? requested : "dashboard"; });
   const [frequency, setFrequency] = useState(() => FREQUENCIES.some((item) => item.id === initialParams.get("frequency")) ? initialParams.get("frequency") : "daily");
-  const [drawer, setDrawer] = useState(() => { const requestedExpense = saved.expenses.find((item) => item.id === initialParams.get("edit")) || null; return { open: initialParams.get("drawer") === "1" || Boolean(requestedExpense), expense: requestedExpense, initialDate: requestedExpense?.date || (/^\d{4}-\d{2}-\d{2}$/.test(initialParams.get("date") || "") ? initialParams.get("date") : DISPLAY_DATE), defaultStatus: requestedExpense?.status || (initialParams.get("planned") === "1" ? "planned" : "actual"), requiresDisclaimers: Boolean(requestedExpense) && initialParams.get("source") === "ledger" }; });
+  const [drawer, setDrawer] = useState(() => { const requestedExpense = saved.expenses.find((item) => item.id === initialParams.get("edit")) || null; return { open: initialParams.get("drawer") === "1" || Boolean(requestedExpense), expense: requestedExpense, initialDate: requestedExpense?.date || (/^\d{4}-\d{2}-\d{2}$/.test(initialParams.get("date") || "") ? initialParams.get("date") : DISPLAY_DATE), defaultStatus: requestedExpense?.status || (initialParams.get("planned") === "1" ? "planned" : "actual") }; });
   const [mobileMenu, setMobileMenu] = useState(false);
   const [toast, setToast] = useState("");
   const [installPrompt, setInstallPrompt] = useState(null);
@@ -486,10 +589,10 @@ function LedgerApp({ initialState, user }) {
   useEffect(() => { if (!toast) return undefined; const timer = window.setTimeout(() => setToast(""), 2600); return () => window.clearTimeout(timer); }, [toast]);
   useEffect(() => { const captureInstall = (event) => { event.preventDefault(); setInstallPrompt(event); }; const markInstalled = () => { setInstalled(true); setInstallPrompt(null); }; window.addEventListener("beforeinstallprompt", captureInstall); window.addEventListener("appinstalled", markInstalled); return () => { window.removeEventListener("beforeinstallprompt", captureInstall); window.removeEventListener("appinstalled", markInstalled); }; }, []);
 
-  const closeDrawer = () => setDrawer({ open: false, expense: null, initialDate: DISPLAY_DATE, defaultStatus: "actual", requiresDisclaimers: false });
-  const openNew = () => setDrawer({ open: true, expense: null, initialDate: DISPLAY_DATE, defaultStatus: "actual", requiresDisclaimers: false });
-  const openLedgerDate = (date, planned) => setDrawer({ open: true, expense: null, initialDate: date, defaultStatus: planned ? "planned" : "actual", requiresDisclaimers: false });
-  const openEdit = (expense, fromLedger = false) => { setFrequency(expense.frequency); setDrawer({ open: true, expense, initialDate: expense.date, defaultStatus: expense.status || "actual", requiresDisclaimers: fromLedger }); };
+  const closeDrawer = () => setDrawer({ open: false, expense: null, initialDate: DISPLAY_DATE, defaultStatus: "actual" });
+  const openNew = () => setDrawer({ open: true, expense: null, initialDate: DISPLAY_DATE, defaultStatus: "actual" });
+  const openLedgerDate = (date, planned) => setDrawer({ open: true, expense: null, initialDate: date, defaultStatus: planned ? "planned" : "actual" });
+  const openEdit = (expense) => { setFrequency(expense.frequency); setDrawer({ open: true, expense, initialDate: expense.date, defaultStatus: expense.status || "actual" }); };
   const saveExpense = (nextExpense) => { setSaved((current) => upsertExpenseWithArchive(current, nextExpense)); closeDrawer(); setToast(drawer.expense ? "Expense updated · old value archived" : nextExpense.status === "planned" ? "Planned expense saved" : "Expense added"); };
   const deleteExpense = (id) => { setSaved((current) => deleteExpenseWithArchive(current, id)); closeDrawer(); setToast("Expense deleted · old value archived"); };
   const transitionUpdate = (update) => { if (document.startViewTransition) document.startViewTransition(() => flushSync(update)); else update(); };
@@ -519,6 +622,10 @@ function LedgerApp({ initialState, user }) {
   }));
   const resetCategoryGroups = () => setSaved((current) => ({ ...current, categoryConfig: { ...(current.categoryConfig || {}), [frequency]: restoreCategoryOrder(current.categoryConfig || {}, frequency) } }));
   const updateAnalyticsModules = (analyticsModules) => setSaved((current) => ({ ...current, analyticsModules }));
+  const saveGroceryItem = (item) => { const exists = (saved.groceryItems || []).some((candidate) => candidate.id === item.id); setSaved((current) => { const items = current.groceryItems || []; return { ...current, groceryItems: exists ? items.map((candidate) => candidate.id === item.id ? item : candidate) : [item, ...items] }; }); setToast(exists ? "Grocery item updated" : "Grocery item added"); };
+  const changeGroceryItem = (id, patch) => setSaved((current) => ({ ...current, groceryItems: (current.groceryItems || []).map((item) => item.id === id ? { ...item, ...patch } : item) }));
+  const deleteGroceryItem = (id) => { setSaved((current) => ({ ...current, groceryItems: (current.groceryItems || []).filter((item) => item.id !== id) })); setToast("Grocery item deleted"); };
+  const copyPreviousGroceryMonth = (targetMonth) => { const sourceMonth = shiftMonthKey(targetMonth, -1); const items = saved.groceryItems || []; if (items.some((item) => item.month === targetMonth)) { setToast(`${monthLabel(targetMonth)} already has a grocery list`); return; } const copies = items.filter((item) => item.month === sourceMonth).map((item) => ({ ...item, id: crypto.randomUUID(), month: targetMonth, purchased: false })); if (!copies.length) { setToast(`No items found in ${monthLabel(sourceMonth)}`); return; } setSaved((current) => ({ ...current, groceryItems: [...copies, ...(current.groceryItems || [])] })); setToast(`${copies.length} items copied from ${monthLabel(sourceMonth)}`); };
   const reset = () => { if (window.confirm("Reset all local expense data, budget and ledgers to the original demo?")) { setSaved(createDefaultState()); setToast("Demo data restored"); } };
   const installApp = async () => { if (!installPrompt) { setToast("Use your browser menu to add Pocket Ledger to the home screen"); return; } await installPrompt.prompt(); const result = await installPrompt.userChoice; if (result.outcome === "accepted") setToast("Pocket Ledger installed"); setInstallPrompt(null); };
 
@@ -526,13 +633,14 @@ function LedgerApp({ initialState, user }) {
   if (active === "transactions") view = <TransactionsView expenses={expenses} aliases={aliases} frequency={frequency} onEdit={(expense) => openEdit(expense)} onAdd={openNew} />;
   else if (active === "ledger") view = <LedgerView records={records} archives={saved.archivedExpenses || []} aliases={aliases} onEdit={(expense) => openEdit(expense, true)} onAdd={openLedgerDate} />;
   else if (active === "budget") view = <BudgetView monthlyBudget={saved.monthlyBudget} monthlyBudgets={saved.monthlyBudgets} expenses={expenses} advanceAccounts={saved.advanceAccounts} creditAccounts={saved.creditAccounts} onBudgetChange={(monthKey, monthlyBudget) => { setSaved((current) => withBudgetForMonth(current, monthKey, monthlyBudget)); setToast(`${monthLabel(monthKey)} budget saved`); }} onAccountChange={updateAccount} />;
+  else if (active === "groceries") view = <GroceryListView groceryItems={saved.groceryItems || []} onSave={saveGroceryItem} onChange={changeGroceryItem} onDelete={deleteGroceryItem} onCopyPrevious={copyPreviousGroceryMonth} />;
   else if (active === "categories") view = <CategoriesView expenses={expenses} frequency={frequency} categoryConfig={saved.categoryConfig || {}} onChange={updateCategoryGroups} onReset={() => { resetCategoryGroups(); setToast(`${FREQUENCY_LABELS[frequency]} category order restored`); }} onNotice={setToast} />;
-  else if (active === "reports") view = <ReportsView expenses={expenses} aliases={aliases} monthlyBudget={saved.monthlyBudget} monthlyBudgets={saved.monthlyBudgets} analyticsModules={saved.analyticsModules || DEFAULT_ANALYTICS_MODULES} onModulesChange={updateAnalyticsModules} onEdit={(expense) => openEdit(expense)} />;
+  else if (active === "reports") view = <ReportsView expenses={expenses} aliases={aliases} monthlyBudget={saved.monthlyBudget} monthlyBudgets={saved.monthlyBudgets} groceryItems={saved.groceryItems || []} analyticsModules={saved.analyticsModules || DEFAULT_ANALYTICS_MODULES} onModulesChange={updateAnalyticsModules} onEdit={(expense) => openEdit(expense)} />;
   else if (active === "settings") view = <><SettingsView appearance={appearance} onAppearanceChange={updateAppearance} onReset={reset} installAvailable={Boolean(installPrompt)} installed={installed} onInstall={installApp} /><section className="module-card account-session-card"><div><strong>Signed in as {user.email}</strong><span>Your database-backed ledger is synced to this account.</span></div><button className="secondary-button" type="button" onClick={() => authClient.signOut()}>Sign out</button></section></>;
   else view = <Dashboard expenses={expenses} aliases={aliases} frequency={frequency} monthlyBudget={saved.monthlyBudget} monthlyBudgets={saved.monthlyBudgets} advanceAccounts={saved.advanceAccounts} creditAccounts={saved.creditAccounts} onEdit={(expense) => openEdit(expense)} onViewAll={() => navigate("transactions")} />;
 
   const showFrequencyTabs = ["dashboard", "transactions", "categories"].includes(active);
-  return <div className="app-shell"><a className="skip-link" href="#main-content">Skip to main content</a><Sidebar active={active} onNavigate={navigate} dark={dark} onToggleDark={toggleDark} budgetSpent={budgetSpent} monthlyBudget={currentBudget} profilePhoto={saved.profilePhoto} onProfilePhoto={updateProfilePhoto} />{mobileMenu && <MobileMenuDrawer active={active} onNavigate={navigate} onClose={() => setMobileMenu(false)} dark={dark} onToggleDark={toggleDark} profilePhoto={saved.profilePhoto} onProfilePhoto={updateProfilePhoto} />}<main className="main-content" id="main-content" tabIndex="-1"><Header active={active} user={user} onAdd={openNew} onToggleMenu={() => setMobileMenu(true)} menuOpen={mobileMenu} />{showFrequencyTabs && <FrequencyTabs value={frequency} onChange={navigateFrequency} />}<div className="view-stage" key={`${active}-${frequency}`}>{view}</div></main><MobileNav active={active} onNavigate={navigate} />{drawer.open && <AddExpenseDrawer key={drawer.expense?.id || `new-${frequency}-${drawer.initialDate}`} expense={drawer.expense} aliases={aliases} defaultFrequency={frequency} initialDate={drawer.initialDate} defaultStatus={drawer.defaultStatus} requiresDisclaimers={drawer.requiresDisclaimers} monthlyBudget={saved.monthlyBudget} monthlyBudgets={saved.monthlyBudgets} advanceAccounts={saved.advanceAccounts} creditAccounts={saved.creditAccounts} categoryConfig={saved.categoryConfig || {}} allExpenses={expenses} onClose={closeDrawer} onSave={saveExpense} onDelete={deleteExpense} />}{toast && <div className="toast" role="status"><Check size={18} weight="bold" /> {toast}</div>}</div>;
+  return <div className="app-shell"><a className="skip-link" href="#main-content">Skip to main content</a><Sidebar active={active} onNavigate={navigate} dark={dark} onToggleDark={toggleDark} budgetSpent={budgetSpent} monthlyBudget={currentBudget} profilePhoto={saved.profilePhoto} onProfilePhoto={updateProfilePhoto} />{mobileMenu && <MobileMenuDrawer active={active} onNavigate={navigate} onClose={() => setMobileMenu(false)} dark={dark} onToggleDark={toggleDark} profilePhoto={saved.profilePhoto} onProfilePhoto={updateProfilePhoto} />}<main className="main-content" id="main-content" tabIndex="-1"><Header active={active} user={user} onAdd={openNew} onToggleMenu={() => setMobileMenu(true)} menuOpen={mobileMenu} />{showFrequencyTabs && <FrequencyTabs value={frequency} onChange={navigateFrequency} />}<div className="view-stage" key={`${active}-${frequency}`}>{view}</div></main><MobileNav active={active} onNavigate={navigate} />{drawer.open && <AddExpenseDrawer key={drawer.expense?.id || `new-${frequency}-${drawer.initialDate}`} expense={drawer.expense} aliases={aliases} defaultFrequency={frequency} initialDate={drawer.initialDate} defaultStatus={drawer.defaultStatus} monthlyBudget={saved.monthlyBudget} monthlyBudgets={saved.monthlyBudgets} advanceAccounts={saved.advanceAccounts} creditAccounts={saved.creditAccounts} categoryConfig={saved.categoryConfig || {}} allExpenses={expenses} onClose={closeDrawer} onSave={saveExpense} onDelete={deleteExpense} />}{toast && <div className="toast" role="status"><Check size={18} weight="bold" /> {toast}</div>}</div>;
 }
 
 export function App() {

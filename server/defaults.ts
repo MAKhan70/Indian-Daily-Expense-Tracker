@@ -34,6 +34,7 @@ export const emptyLedgerState = () => {
     appearance: { mode: "light", palette: "calm-indigo", look: "soft" },
     categoryConfig: {},
     analyticsModules: { pie: true, bar: true, trend: true, pieParameter: "payment", barParameter: "category", trendParameter: "daily" },
+    groceryItems: [],
     profilePhoto: "",
   };
 };

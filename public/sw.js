@@ -1,4 +1,4 @@
-const CACHE_NAME = "pocket-ledger-shell-v8";
+const CACHE_NAME = "pocket-ledger-shell-v9";
 const scopedPath = (path = "") => new URL(path, self.registration.scope).pathname;
 const APP_SHELL = [
   scopedPath(),

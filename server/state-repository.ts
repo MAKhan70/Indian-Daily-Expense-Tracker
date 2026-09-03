@@ -10,14 +10,15 @@ const parseJson = <T>(value: string | null | undefined, fallback: T): T => {
 };
 
 export async function readLedgerState(userId: string) {
-  const [expenses, archives, budgets, accounts, preference] = await Promise.all([
+  const [expenses, archives, budgets, accounts, groceryItems, preference] = await Promise.all([
     prisma.expense.findMany({ where: { userId }, orderBy: [{ date: "desc" }, { time: "desc" }] }),
     prisma.expenseArchive.findMany({ where: { userId }, orderBy: { archivedAt: "desc" } }),
     prisma.monthlyBudget.findMany({ where: { userId } }),
     prisma.paymentAccount.findMany({ where: { userId }, orderBy: [{ kind: "asc" }, { slot: "asc" }] }),
+    prisma.groceryItem.findMany({ where: { userId }, orderBy: [{ month: "desc" }, { groupName: "asc" }, { name: "asc" }] }),
     prisma.userPreference.findUnique({ where: { userId } }),
   ]);
-  const hasData = Boolean(expenses.length || archives.length || budgets.length || accounts.length || preference?.localImportCompleted);
+  const hasData = Boolean(expenses.length || archives.length || budgets.length || accounts.length || groceryItems.length || preference?.localImportCompleted);
   if (!hasData) return { state: emptyLedgerState(), hasData: false };
   const fallback = emptyLedgerState();
   const advanceAccounts = accounts.filter((item) => item.kind === "advance").map((item) => ({ id: item.paymentId, label: item.label, merchant: item.merchant, amountPaid: fromMinor(item.definedAmountMinor) }));
@@ -40,6 +41,7 @@ export async function readLedgerState(userId: string) {
     },
     categoryConfig: parseJson(preference?.categoryConfigJson, {}),
     analyticsModules: parseJson(preference?.analyticsModulesJson, { pie: true, bar: true, trend: true, pieParameter: "payment", barParameter: "category", trendParameter: "daily" }),
+    groceryItems: groceryItems.map(({ unitPriceMinor, createdAt: _c, updatedAt: _u, userId: _uid, ...item }) => ({ ...item, unitPrice: unitPriceMinor === null ? null : fromMinor(unitPriceMinor) })),
     profilePhoto: preference?.profilePhoto ?? "",
   } };
 }
@@ -50,6 +52,7 @@ export async function replaceLedgerState(userId: string, state: LedgerStateInput
     await tx.expense.deleteMany({ where: { userId } });
     await tx.monthlyBudget.deleteMany({ where: { userId } });
     await tx.paymentAccount.deleteMany({ where: { userId } });
+    await tx.groceryItem.deleteMany({ where: { userId } });
     if (state.expenses.length) await tx.expense.createMany({ data: state.expenses.map(({ amount, id, ...item }) => ({ ...item, id: scopedRecordId(userId, id), amountMinor: toMinor(amount), userId })) });
     if (state.archivedExpenses.length) await tx.expenseArchive.createMany({ data: state.archivedExpenses.map(({ archiveId, archivedAt, archiveReason, id, amount, ...item }) => ({ ...item, id: scopedRecordId(userId, archiveId), sourceExpenseId: scopedRecordId(userId, id), amountMinor: toMinor(amount), archiveReason, archivedAt: new Date(archivedAt), userId })) });
     const budgets = Object.entries(state.monthlyBudgets).map(([month, amount]) => ({ userId, month, amountMinor: toMinor(amount) }));
@@ -58,6 +61,7 @@ export async function replaceLedgerState(userId: string, state: LedgerStateInput
       ...state.advanceAccounts.map((item, index) => ({ userId, kind: "advance", slot: index + 1, paymentId: item.id, label: item.label, merchant: item.merchant, definedAmountMinor: toMinor(item.amountPaid) })),
       ...state.creditAccounts.map((item, index) => ({ userId, kind: "credit", slot: index + 1, paymentId: item.id, label: item.label, merchant: item.merchant, definedAmountMinor: toMinor(item.creditLimit) })),
     ] });
+    if (state.groceryItems.length) await tx.groceryItem.createMany({ data: state.groceryItems.map(({ id, unitPrice, ...item }) => ({ ...item, id: scopedRecordId(userId, id), unitPriceMinor: unitPrice === null ? null : toMinor(unitPrice), userId })) });
     await tx.userPreference.upsert({
       where: { userId },
       create: { userId, dark: state.dark, themeMode: state.appearance.mode, palette: state.appearance.palette, look: state.appearance.look, categoryConfigJson: JSON.stringify(state.categoryConfig), analyticsModulesJson: JSON.stringify(state.analyticsModules), profilePhoto: state.profilePhoto || null, localImportCompleted },
