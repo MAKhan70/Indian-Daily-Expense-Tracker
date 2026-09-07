@@ -102,6 +102,7 @@ export const stateSchema = z.object({
   }).default({ pie: true, bar: true, trend: true, pieParameter: "payment", barParameter: "category", trendParameter: "daily" }),
   groceryItems: z.array(groceryItemSchema).max(20_000).default([]),
   profilePhoto: z.string().max(500_000).refine((value) => !value || /^data:image\/(jpeg|png|webp);base64,/.test(value), "Invalid profile image").default(""),
+  language: z.enum(["en", "as", "bn", "brx", "doi", "gu", "hi", "kn", "ks", "kok", "mai", "ml", "mni", "mr", "ne", "or", "pa", "sa", "sat", "sd", "ta", "te", "ur"]).default("en"),
 });
 
 export type LedgerStateInput = z.infer<typeof stateSchema>;

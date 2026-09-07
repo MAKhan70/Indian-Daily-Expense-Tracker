@@ -42,8 +42,15 @@ export function createServer() {
 
   if (process.env.NODE_ENV === "production") {
     const clientDirectory = path.resolve(process.cwd(), "dist/client");
+    const sendMutableShellFile = (fileName: string) => (_req: Request, res: Response) => {
+      res.set("Cache-Control", "no-cache, no-store, must-revalidate");
+      res.set("Pragma", "no-cache");
+      return res.sendFile(path.join(clientDirectory, fileName));
+    };
+    app.get("/sw.js", sendMutableShellFile("sw.js"));
+    app.get("/manifest.webmanifest", sendMutableShellFile("manifest.webmanifest"));
     app.use(express.static(clientDirectory, { index: false, maxAge: "1y", immutable: true }));
-    app.get("/{*splat}", (req, res, next) => req.path.startsWith("/api/") ? next() : res.sendFile(path.join(clientDirectory, "index.html")));
+    app.get("/{*splat}", (req, res, next) => req.path.startsWith("/api/") ? next() : sendMutableShellFile("index.html")(req, res));
   }
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
     if (error && typeof error === "object" && "issues" in error) return res.status(400).json({ error: "Invalid ledger data", details: (error as { issues: unknown }).issues });

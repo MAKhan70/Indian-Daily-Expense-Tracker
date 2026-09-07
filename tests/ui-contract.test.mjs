@@ -120,6 +120,19 @@ test("monthly grocery list is standalone, month-aware and analytically visible",
   assert.match(grocery, /Skipped this month/);
   assert.match(grocery, /Copy \{monthLabel\(previousMonth\)\}/);
   assert.match(grocery, /never enter spending or budget totals/);
+  assert.match(grocery, /Finalise &amp; share/);
+  assert.match(grocery, /https:\/\/wa\.me\/\?text=/);
+  assert.match(grocery, /never prices/);
   assert.match(styles, /\.grocery-page/);
   assert.match(styles, /\.grocery-analytics-card/);
+  assert.match(styles, /container:\s*grocery-page\s*\/\s*inline-size/);
+  assert.match(styles, /@container grocery-page \(max-width: 520px\)/);
+});
+
+test("settings expose account-synced Indian language packs", () => {
+  const settings = appSource.slice(appSource.indexOf("function SettingsView"), appSource.indexOf("function ModernDatePicker"));
+  assert.match(settings, /INDIAN_LANGUAGES\.map/);
+  assert.match(settings, /all 22 languages/);
+  assert.match(appSource, /document\.documentElement\.lang/);
+  assert.match(appSource, /language: resolved/);
 });

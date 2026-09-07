@@ -3,7 +3,7 @@ import { flushSync } from "react-dom";
 import {
   ArrowsClockwise, Bank, CalendarBlank, CaretDown, CaretLeft, CaretRight, CaretUp, ChartBar, ChartDonut,
   Camera, Check, CreditCard, DownloadSimple, GearSix, HandCoins, House, MagnifyingGlass,
-  List, Moon, PencilSimple, Plus, Receipt, ShoppingBag, ShoppingCart, Sparkle, Sun, Tag, Trash,
+  List, Moon, PencilSimple, Plus, Receipt, ShoppingBag, ShoppingCart, Sparkle, Sun, Tag, Trash, WhatsappLogo,
   TrendDown, UserCircle, Wallet, X,
 } from "@phosphor-icons/react";
 import {
@@ -17,12 +17,13 @@ import "@fontsource/playfair-display/600.css";
 import {
   activeCategoryGroups, APPEARANCE_DEFAULTS, buildAliases, CATEGORY_LIBRARY, categoryGroupFor, createDefaultState, DEFAULT_ANALYTICS_MODULES, deleteExpenseWithArchive, DISPLAY_DATE, DISPLAY_MONTH,
   expensesForMonth, formatINR, FREQUENCIES, getBudgetForMonth, isAdvancePayment, isBudgetExpense, isCreditBorrow,
-  GROCERY_GROUPS, GROCERY_UNITS, indiaDateKey, indiaGreeting, isDisplayMonth, ledgerUsageForMonth, loadState, managedCategoryGroups, monthLabel, PAYMENT_GROUPS, QUICK_AMOUNTS, restoreCategoryOrder, shiftMonthKey, STORAGE_KEY, titleCaseDate,
+  GROCERY_GROUPS, GROCERY_UNITS, indiaDateKey, indiaGreeting, isDisplayMonth, ledgerUsageForMonth, loadState, managedCategoryGroups, monthLabel, newId, PAYMENT_GROUPS, QUICK_AMOUNTS, restoreCategoryOrder, shiftMonthKey, STORAGE_KEY, titleCaseDate,
   upsertExpenseWithArchive, withBudgetForMonth,
 } from "./domain.js";
 import { LedgerView } from "./LedgerView.jsx";
 import { AuthScreen, ImportChoice, ResetPasswordScreen } from "./AuthScreen.jsx";
 import { authClient } from "./auth-client.js";
+import { groceryShareText, grocerySummaryText, INDIAN_LANGUAGES, languageDetails, localizedMonthLabel, navText } from "./i18n.js";
 
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: House },
@@ -37,6 +38,7 @@ const NAV_ITEMS = [
 
 const FREQUENCY_LABELS = Object.fromEntries(FREQUENCIES.map((item) => [item.id, item.label]));
 const CHART_COLORS = ["#648955", "#d2a533", "#b96f52", "#77518c", "#5f7f8f", "#9b687a", "#78834b", "#a86646"];
+const navItemLabel = (item, language = "en") => navText(language, item.id);
 
 function paymentIcon(id) {
   if (String(id).includes("card") || isCreditBorrow(id)) return CreditCard;
@@ -78,16 +80,29 @@ function CurrencyTooltip({ active, payload, label }) {
 async function prepareProfilePhoto(file) {
   if (!file?.type?.startsWith("image/")) throw new Error("Choose a JPG, PNG or WebP image.");
   if (file.size > 8 * 1024 * 1024) throw new Error("Choose an image smaller than 8 MB.");
-  const bitmap = await createImageBitmap(file);
-  const size = Math.min(bitmap.width, bitmap.height);
+  let image;
+  let cleanup = () => {};
+  if ("createImageBitmap" in window) image = await window.createImageBitmap(file);
+  else {
+    image = await new Promise((resolve, reject) => {
+      const element = new Image();
+      const url = URL.createObjectURL(file);
+      cleanup = () => URL.revokeObjectURL(url);
+      element.onload = () => resolve(element);
+      element.onerror = () => { cleanup(); reject(new Error("This browser could not read that image.")); };
+      element.src = url;
+    });
+  }
+  const size = Math.min(image.width, image.height);
   const canvas = document.createElement("canvas");
   canvas.width = 320;
   canvas.height = 320;
   const context = canvas.getContext("2d");
   context.fillStyle = "#fffaf5";
   context.fillRect(0, 0, canvas.width, canvas.height);
-  context.drawImage(bitmap, (bitmap.width - size) / 2, (bitmap.height - size) / 2, size, size, 0, 0, canvas.width, canvas.height);
-  bitmap.close();
+  context.drawImage(image, (image.width - size) / 2, (image.height - size) / 2, size, size, 0, 0, canvas.width, canvas.height);
+  image.close?.();
+  cleanup();
   return canvas.toDataURL("image/jpeg", 0.82);
 }
 
@@ -95,42 +110,42 @@ function ProfilePhotoControl({ photo, onFile, id, compact = false }) {
   return <label className={compact ? "profile-photo-control compact" : "profile-photo-control"} htmlFor={id}><input className="visually-hidden" id={id} name={id} type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) onFile(file); event.target.value = ""; }} /><span className="profile-avatar">{photo ? <img src={photo} alt="Profile" width="52" height="52" /> : <UserCircle size={31} weight="duotone" />}</span><span className="profile-copy"><strong>Your profile</strong><small>{photo ? "Change profile picture" : "Add profile picture"}</small></span><Camera className="profile-camera" size={18} weight="duotone" aria-hidden="true" /></label>;
 }
 
-function Sidebar({ active, onNavigate, dark, onToggleDark, budgetSpent, monthlyBudget, profilePhoto, onProfilePhoto }) {
+function Sidebar({ active, onNavigate, dark, onToggleDark, budgetSpent, monthlyBudget, profilePhoto, onProfilePhoto, language }) {
   const percent = monthlyBudget > 0 ? Math.round((budgetSpent / monthlyBudget) * 100) : 0;
   return (
     <aside className="sidebar" aria-label="Primary navigation">
       <div className="brand-block"><span className="brand-mark" aria-hidden="true"><Wallet weight="fill" /></span><div><strong>Pocket Ledger</strong><span>Daily Expense Tracker</span></div></div>
       <ProfilePhotoControl photo={profilePhoto} onFile={onProfilePhoto} id="desktop-profile-photo" compact />
-      <nav className="sidebar-nav">{NAV_ITEMS.map((item) => { const Icon = item.icon; return <button className={active === item.id ? "nav-item active" : "nav-item"} key={item.id} onClick={() => onNavigate(item.id)} aria-current={active === item.id ? "page" : undefined}><Icon size={21} weight={active === item.id ? "fill" : "regular"} /><span>{item.label}</span></button>; })}</nav>
+      <nav className="sidebar-nav">{NAV_ITEMS.map((item) => { const Icon = item.icon; return <button className={active === item.id ? "nav-item active" : "nav-item"} key={item.id} onClick={() => onNavigate(item.id)} aria-current={active === item.id ? "page" : undefined}><Icon size={21} weight={active === item.id ? "fill" : "regular"} /><span>{navItemLabel(item, language)}</span></button>; })}</nav>
       <div className="sidebar-foot"><div className="month-note"><span>{monthLabel(DISPLAY_MONTH)} budget</span><strong>{formatINR(budgetSpent)} spent</strong><small><TrendDown size={14} /> {percent}% of {formatINR(monthlyBudget)}</small></div><button className="theme-toggle" onClick={onToggleDark} aria-pressed={dark}><Moon size={19} /><span>Dark mode</span><i aria-hidden="true" /></button></div>
     </aside>
   );
 }
 
-function MobileNav({ active, onNavigate }) {
+function MobileNav({ active, onNavigate, language }) {
   const items = NAV_ITEMS.slice(0, 4);
-  return <nav className="mobile-nav" aria-label="Mobile navigation">{items.map((item) => { const Icon = item.icon; return <button key={item.id} className={active === item.id ? "active" : ""} onClick={() => onNavigate(item.id)}><Icon size={21} weight={active === item.id ? "fill" : "regular"} /><span>{item.label.replace(" & Ledgers", "")}</span></button>; })}</nav>;
+  return <nav className="mobile-nav" aria-label="Mobile navigation">{items.map((item) => { const Icon = item.icon; return <button key={item.id} className={active === item.id ? "active" : ""} onClick={() => onNavigate(item.id)}><Icon size={21} weight={active === item.id ? "fill" : "regular"} /><span>{navItemLabel(item, language).replace(" & Ledgers", "")}</span></button>; })}</nav>;
 }
 
-function Header({ active, onAdd, onToggleMenu, menuOpen, user }) {
-  const label = NAV_ITEMS.find((item) => item.id === active)?.label || "Dashboard";
+function Header({ active, onAdd, onToggleMenu, menuOpen, user, language }) {
+  const label = navItemLabel(NAV_ITEMS.find((item) => item.id === active) || NAV_ITEMS[0], language);
   const [now, setNow] = useState(() => new Date());
   useEffect(() => { const timer = window.setInterval(() => setNow(new Date()), 60_000); return () => window.clearInterval(timer); }, []);
   const accountName = String(user?.name || "").trim();
   const userName = accountName || String(user?.email?.split("@")[0] || "there").trim();
   const heading = active === "dashboard" ? `${indiaGreeting(now)}, ${userName}` : label;
   const subtitle = active === "dashboard" ? "A clear view of today, this month, and what comes next." : active === "groceries" ? "Plan household essentials separately from your expense ledger." : "Keep every rupee clear and accounted for.";
-  return <header className="page-header"><button id="mobile-menu-trigger" className="mobile-menu" onClick={onToggleMenu} aria-label="Open navigation menu" aria-expanded={menuOpen} aria-controls="mobile-navigation-drawer"><List size={23} weight="bold" /></button><div><p>{titleCaseDate(indiaDateKey(now))} · IST</p><h1>{heading}</h1><span>{subtitle}</span></div>{active !== "groceries" && <button className="primary-button header-add" onClick={onAdd}><Plus size={19} weight="bold" /> Log expense</button>}</header>;
+  return <header className={`page-header ${active}`}><button id="mobile-menu-trigger" className="mobile-menu" onClick={onToggleMenu} aria-label="Open navigation menu" aria-expanded={menuOpen} aria-controls="mobile-navigation-drawer"><List size={23} weight="bold" /></button><div><p>{titleCaseDate(indiaDateKey(now))} · IST</p><h1>{heading}</h1><span>{subtitle}</span></div>{active !== "groceries" && <button className="primary-button header-add" onClick={onAdd}><Plus size={19} weight="bold" /> Log expense</button>}</header>;
 }
 
-function MobileMenuDrawer({ active, onNavigate, onClose, dark, onToggleDark, profilePhoto, onProfilePhoto }) {
+function MobileMenuDrawer({ active, onNavigate, onClose, dark, onToggleDark, profilePhoto, onProfilePhoto, language }) {
   useEffect(() => {
     const closeOnEscape = (event) => event.key === "Escape" && onClose();
     document.addEventListener("keydown", closeOnEscape);
     document.body.classList.add("menu-open");
     return () => { document.removeEventListener("keydown", closeOnEscape); document.body.classList.remove("menu-open"); document.getElementById("mobile-menu-trigger")?.focus(); };
   }, [onClose]);
-  return <div className="mobile-menu-drawer" id="mobile-navigation-drawer" role="dialog" aria-modal="true" aria-label="Navigation menu"><button className="mobile-menu-backdrop" onClick={onClose} aria-label="Close navigation menu" /><aside className="mobile-menu-panel"><div className="mobile-menu-head"><div className="brand-block"><span className="brand-mark" aria-hidden="true"><Wallet weight="fill" /></span><div><strong>Pocket Ledger</strong><span>Daily Expense Tracker</span></div></div><button type="button" className="icon-button" onClick={onClose} aria-label="Close menu" autoFocus><X size={21} /></button></div><ProfilePhotoControl photo={profilePhoto} onFile={onProfilePhoto} id="mobile-profile-photo" /><nav aria-label="Mobile navigation">{NAV_ITEMS.map((item) => { const Icon = item.icon; return <button className={active === item.id ? "active" : ""} key={item.id} onClick={() => onNavigate(item.id)} aria-current={active === item.id ? "page" : undefined}><Icon size={21} weight={active === item.id ? "fill" : "regular"} /><span>{item.label}</span></button>; })}</nav><button type="button" className="menu-theme-toggle" onClick={onToggleDark} aria-pressed={dark}>{dark ? <Sun size={20} /> : <Moon size={20} />}<span><strong>{dark ? "Light theme" : "Dark theme"}</strong><small>Change appearance now</small></span><i aria-hidden="true" /></button><p>Account protected · securely synced</p></aside></div>;
+  return <div className="mobile-menu-drawer" id="mobile-navigation-drawer" role="dialog" aria-modal="true" aria-label="Navigation menu"><button className="mobile-menu-backdrop" onClick={onClose} aria-label="Close navigation menu" /><aside className="mobile-menu-panel"><div className="mobile-menu-head"><div className="brand-block"><span className="brand-mark" aria-hidden="true"><Wallet weight="fill" /></span><div><strong>Pocket Ledger</strong><span>Daily Expense Tracker</span></div></div><button type="button" className="icon-button" onClick={onClose} aria-label="Close menu" autoFocus><X size={21} /></button></div><ProfilePhotoControl photo={profilePhoto} onFile={onProfilePhoto} id="mobile-profile-photo" /><nav aria-label="Mobile navigation">{NAV_ITEMS.map((item) => { const Icon = item.icon; return <button className={active === item.id ? "active" : ""} key={item.id} onClick={() => onNavigate(item.id)} aria-current={active === item.id ? "page" : undefined}><Icon size={21} weight={active === item.id ? "fill" : "regular"} /><span>{navItemLabel(item, language)}</span></button>; })}</nav><button type="button" className="menu-theme-toggle" onClick={onToggleDark} aria-pressed={dark}>{dark ? <Sun size={20} /> : <Moon size={20} />}<span><strong>{dark ? "Light theme" : "Dark theme"}</strong><small>Change appearance now</small></span><i aria-hidden="true" /></button><p>Account protected · securely synced</p></aside></div>;
 }
 
 function BudgetHero({ expenses, selectedMonth, onMonthChange, monthlyBudget, monthlyBudgets, advanceAccounts, creditAccounts }) {
@@ -180,7 +195,7 @@ function TransactionsView({ expenses, aliases, frequency, onEdit, onAdd }) {
 const groceryTotal = (item) => item.unitPrice === null || item.unitPrice === "" ? null : Number(item.quantity || 0) * Number(item.unitPrice || 0);
 const emptyGroceryDraft = (month) => ({ id: "", month, name: "", groupName: "General Grocery", quantity: "1", unit: "kg", unitPrice: "", included: true, purchased: false, note: "" });
 
-function GroceryListView({ groceryItems, onSave, onChange, onDelete, onCopyPrevious }) {
+function GroceryListView({ groceryItems, onSave, onChange, onDelete, onCopyPrevious, language }) {
   const [selectedMonth, setSelectedMonth] = useState(DISPLAY_MONTH);
   const [query, setQuery] = useState("");
   const [groupFilter, setGroupFilter] = useState("all");
@@ -195,6 +210,7 @@ function GroceryListView({ groceryItems, onSave, onChange, onDelete, onCopyPrevi
   const purchased = included.filter((item) => item.purchased);
   const skipped = monthItems.filter((item) => !item.included);
   const estimated = included.reduce((sum, item) => sum + (groceryTotal(item) || 0), 0);
+  const whatsAppUrl = included.length ? `https://wa.me/?text=${encodeURIComponent(groceryShareText(included, selectedMonth, language))}` : "";
   const previousMonth = shiftMonthKey(selectedMonth, -1);
   const previousCount = groceryItems.filter((item) => item.month === previousMonth).length;
   const calculatedTotal = draft.unitPrice === "" ? null : Number(draft.quantity || 0) * Number(draft.unitPrice || 0);
@@ -208,7 +224,7 @@ function GroceryListView({ groceryItems, onSave, onChange, onDelete, onCopyPrevi
     if (!groupName) return;
     onSave({
       ...draft,
-      id: draft.id || crypto.randomUUID(),
+      id: draft.id || newId(),
       month: selectedMonth,
       name: draft.name.trim(),
       groupName,
@@ -221,9 +237,9 @@ function GroceryListView({ groceryItems, onSave, onChange, onDelete, onCopyPrevi
   };
   return <div className="grocery-page">
     <section className="grocery-hero module-card">
-      <div><span className="eyebrow">Standalone monthly planner</span><h2>{monthLabel(selectedMonth)} grocery list</h2><p>Plan household purchases without adding anything to expenses. Include, skip and mark items bought month by month.</p></div>
-      <MonthNavigator value={selectedMonth} onChange={changeMonth} label="Monthly grocery list month" />
-      <div className="grocery-summary" aria-label="Monthly grocery summary"><span><small>Included</small><strong>{included.length}</strong></span><span><small>Purchased</small><strong>{purchased.length}</strong></span><span><small>Skipped</small><strong>{skipped.length}</strong></span><span><small>Estimated list</small><strong>{estimated ? formatINR(estimated) : "—"}</strong></span></div>
+      <div><span className="eyebrow">Standalone monthly planner</span><h2>{localizedMonthLabel(selectedMonth, language)} {navText(language, "groceries")}</h2><p>Plan household purchases without adding anything to expenses. Include, skip and mark items bought month by month.</p></div>
+      <div className="grocery-hero-actions"><MonthNavigator value={selectedMonth} onChange={changeMonth} label="Monthly grocery list month" />{included.length ? <a className="whatsapp-share" href={whatsAppUrl} target="_blank" rel="noopener noreferrer" aria-label={`Finalise and share ${localizedMonthLabel(selectedMonth, language)} grocery list on WhatsApp without prices`}><WhatsappLogo size={19} weight="fill" /> Finalise &amp; share</a> : <button type="button" className="whatsapp-share" disabled><WhatsappLogo size={19} weight="fill" /> Finalise &amp; share</button>}<small>WhatsApp copy includes item names and quantities only—never prices.</small></div>
+      <div className="grocery-summary" aria-label="Monthly grocery summary"><span><small>{grocerySummaryText(language, "included")}</small><strong>{included.length}</strong></span><span><small>{grocerySummaryText(language, "purchased")}</small><strong>{purchased.length}</strong></span><span><small>{grocerySummaryText(language, "skipped")}</small><strong>{skipped.length}</strong></span><span><small>{grocerySummaryText(language, "estimated")}</small><strong>{estimated ? formatINR(estimated) : "—"}</strong></span></div>
     </section>
 
     <section className="module-card grocery-editor-card">
@@ -318,7 +334,7 @@ function CategoriesView({ expenses, frequency, categoryConfig, onChange, onReset
     const name = newCategory.trim(); const subcategory = firstSubcategory.trim();
     if (!name || !subcategory) return onNotice("Enter both a category and its first sub-category");
     if (groups.some((group) => group.name.toLocaleLowerCase("en-IN") === name.toLocaleLowerCase("en-IN"))) return onNotice("That category already exists");
-    save([...groups, { id: crypto.randomUUID(), name, enabled: true, custom: true, subcategories: [{ id: crypto.randomUUID(), name: subcategory, enabled: true, custom: true }] }], `${name} added to ${FREQUENCY_LABELS[frequency]}`);
+    save([...groups, { id: newId(), name, enabled: true, custom: true, subcategories: [{ id: newId(), name: subcategory, enabled: true, custom: true }] }], `${name} added to ${FREQUENCY_LABELS[frequency]}`);
     setNewCategory(""); setFirstSubcategory("");
   };
   const addSubcategory = (event, group) => {
@@ -326,7 +342,7 @@ function CategoriesView({ expenses, frequency, categoryConfig, onChange, onReset
     const name = String(subcategoryDrafts[group.id] || "").trim();
     if (!name) return onNotice("Enter a sub-category name");
     if (group.subcategories.some((item) => item.name.toLocaleLowerCase("en-IN") === name.toLocaleLowerCase("en-IN"))) return onNotice("That sub-category already exists here");
-    updateGroup(group.id, (current) => ({ ...current, subcategories: [...current.subcategories, { id: crypto.randomUUID(), name, enabled: true, custom: true }] }), `${name} added`);
+    updateGroup(group.id, (current) => ({ ...current, subcategories: [...current.subcategories, { id: newId(), name, enabled: true, custom: true }] }), `${name} added`);
     setSubcategoryDrafts((current) => ({ ...current, [group.id]: "" }));
   };
   const toggleExpanded = (id) => setExpanded((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next; });
@@ -451,10 +467,10 @@ function ReportsView({ expenses, aliases, monthlyBudget, monthlyBudgets, grocery
   </section></div>;
 }
 
-function SettingsView({ appearance, onAppearanceChange, onReset, installAvailable, installed, onInstall }) {
+function SettingsView({ appearance, onAppearanceChange, onReset, installAvailable, installed, onInstall, language, onLanguageChange }) {
   const modes = [["light", "Light"], ["dark", "Dark"], ["system", "Device"]];
   const palettes = [["calm-indigo", "Calm Indigo"], ["heritage", "Heritage Plum"], ["ocean", "Indian Ocean"], ["forest", "Forest"], ["rose", "Rose"], ["saffron", "Saffron"], ["teal", "Teal"], ["cobalt", "Cobalt"], ["amethyst", "Amethyst"], ["terracotta", "Terracotta"], ["monsoon", "Monsoon"], ["lotus", "Lotus"], ["sandstone", "Sandstone"], ["mint", "Mint"], ["slate", "Slate"], ["copper", "Copper"], ["berry", "Berry"], ["lagoon", "Lagoon"], ["marigold", "Marigold"], ["graphite", "Graphite"]];
-  return <section className="module-card settings-view"><div className="pwa-install-card"><div className="pwa-icon"><Wallet size={24} weight="fill" /></div><div><strong>{installed ? "Pocket Ledger is installed" : "Install Pocket Ledger"}</strong><span>{installed ? "It can now launch from your home screen in its own app window." : installAvailable ? "Add it to this device for a standalone, offline-capable experience." : "On iPhone, use Share → Add to Home Screen. On Android, use the browser’s Install app option."}</span></div>{!installed && <button className="primary-button" type="button" onClick={onInstall}><DownloadSimple size={18} /> Install app</button>}</div><div className="appearance-settings"><div className="settings-heading"><span className="eyebrow">Personalise</span><h2>Appearance</h2><p>Choose the theme, colour palette and surface style used across the website and installed app.</p></div><fieldset><legend>Theme</legend><div className="segmented-setting">{modes.map(([id, label]) => <button type="button" key={id} className={appearance.mode === id ? "active" : ""} onClick={() => onAppearanceChange({ mode: id })} aria-pressed={appearance.mode === id}>{id === "dark" ? <Moon size={18} /> : id === "light" ? <Sun size={18} /> : <GearSix size={18} />}{label}</button>)}</div></fieldset><fieldset><legend>Colour palette</legend><div className="palette-options">{palettes.map(([id, label]) => <button type="button" key={id} className={appearance.palette === id ? "active" : ""} onClick={() => onAppearanceChange({ palette: id })} aria-pressed={appearance.palette === id}><i className={`palette-swatch ${id}`} aria-hidden="true" /><span>{label}</span>{appearance.palette === id && <Check size={17} weight="bold" aria-hidden="true" />}</button>)}</div></fieldset><fieldset><legend>Look</legend><div className="look-options"><button type="button" className={appearance.look === "soft" ? "active" : ""} onClick={() => onAppearanceChange({ look: "soft" })} aria-pressed={appearance.look === "soft"}><strong>Soft heritage</strong><span>Rounded cards, gentle shadows and depth.</span></button><button type="button" className={appearance.look === "crisp" ? "active" : ""} onClick={() => onAppearanceChange({ look: "crisp" })} aria-pressed={appearance.look === "crisp"}><strong>Clean & crisp</strong><span>Sharper cards, lighter shadows and compact surfaces.</span></button></div></fieldset></div><div className="settings-section"><h2>Data model</h2><p>Daily, Weekly, Monthly and One-off expenses are stored in your account-backed ledger. Monthly budget totals exclude Advance Payment and Credit Borrow entries. Merchant ledgers can be configured under Budget & Ledgers.</p></div><div className="danger-zone"><div><strong>Reset demo data</strong><span>Restore the original sample expenses, monthly budget and merchant ledgers.</span></div><button className="danger-button" onClick={onReset}><ArrowsClockwise size={17} /> Reset</button></div></section>;
+  return <section className="module-card settings-view"><div className="pwa-install-card"><div className="pwa-icon"><Wallet size={24} weight="fill" /></div><div><strong>{installed ? "Pocket Ledger is installed" : "Install Pocket Ledger"}</strong><span>{installed ? "It can now launch from your home screen in its own app window." : installAvailable ? "Add it to this device for a standalone, offline-capable experience." : "On iPhone or iPad, open Pocket Ledger in Safari and use Share → Add to Home Screen. On Android, use Install app in Chrome."}</span></div>{!installed && <button className="primary-button" type="button" onClick={onInstall}><DownloadSimple size={18} /> Install app</button>}</div><div className="language-settings"><div className="settings-heading"><span className="eyebrow">Indian language pack</span><h2>Language</h2><p>English is the default. Choose from all 22 languages in the Eighth Schedule of the Indian Constitution; the choice syncs across your devices.</p></div><label htmlFor="app-language"><span>App language</span><select id="app-language" name="app-language" value={language} onChange={(event) => onLanguageChange(event.target.value)}>{INDIAN_LANGUAGES.map((item) => <option key={item.code} value={item.code}>{item.nativeName} — {item.name} · {item.regions}</option>)}</select></label></div><div className="appearance-settings"><div className="settings-heading"><span className="eyebrow">Personalise</span><h2>Appearance</h2><p>Choose the theme, colour palette and surface style used across the website and installed app.</p></div><fieldset><legend>Theme</legend><div className="segmented-setting">{modes.map(([id, label]) => <button type="button" key={id} className={appearance.mode === id ? "active" : ""} onClick={() => onAppearanceChange({ mode: id })} aria-pressed={appearance.mode === id}>{id === "dark" ? <Moon size={18} /> : id === "light" ? <Sun size={18} /> : <GearSix size={18} />}{label}</button>)}</div></fieldset><fieldset><legend>Colour palette</legend><div className="palette-options">{palettes.map(([id, label]) => <button type="button" key={id} className={appearance.palette === id ? "active" : ""} onClick={() => onAppearanceChange({ palette: id })} aria-pressed={appearance.palette === id}><i className={`palette-swatch ${id}`} aria-hidden="true" /><span>{label}</span>{appearance.palette === id && <Check size={17} weight="bold" aria-hidden="true" />}</button>)}</div></fieldset><fieldset><legend>Look</legend><div className="look-options"><button type="button" className={appearance.look === "soft" ? "active" : ""} onClick={() => onAppearanceChange({ look: "soft" })} aria-pressed={appearance.look === "soft"}><strong>Soft heritage</strong><span>Rounded cards, gentle shadows and depth.</span></button><button type="button" className={appearance.look === "crisp" ? "active" : ""} onClick={() => onAppearanceChange({ look: "crisp" })} aria-pressed={appearance.look === "crisp"}><strong>Clean & crisp</strong><span>Sharper cards, lighter shadows and compact surfaces.</span></button></div></fieldset></div><div className="settings-section"><h2>Data model</h2><p>Daily, Weekly, Monthly and One-off expenses are stored in your account-backed ledger. Monthly budget totals exclude Advance Payment and Credit Borrow entries. Merchant ledgers can be configured under Budget & Ledgers.</p></div><div className="danger-zone"><div><strong>Reset demo data</strong><span>Restore the original sample expenses, monthly budget and merchant ledgers.</span></div><button className="danger-button" onClick={onReset}><ArrowsClockwise size={17} /> Reset</button></div></section>;
 }
 
 function ModernDatePicker({ value, onChange }) {
@@ -522,7 +538,7 @@ function AddExpenseDrawer({ expense, aliases, defaultFrequency, initialDate = DI
   const baseBudgetSpent = allExpenses.filter((item) => item.id !== expense?.id && String(item.date).startsWith(formMonth) && isBudgetExpense(item)).reduce((sum, item) => sum + Number(item.amount), 0);
   const projectedBudgetSpent = baseBudgetSpent + (isBudgetExpense(form) && !isFuture ? Number(form.amount) || 0 : 0);
   const ledgerUsed = (payment) => allExpenses.filter((item) => item.payment === payment && item.id !== expense?.id).reduce((sum, item) => sum + Number(item.amount), 0) + (Number(form.amount) || 0);
-  const submit = (event) => { event.preventDefault(); const nextErrors = {}; if (!Number(form.amount) || Number(form.amount) <= 0) nextErrors.amount = "Enter an amount greater than zero."; if (Number(form.amount) > 10000000) nextErrors.amount = "Amount must be below ₹1,00,00,000."; if (!form.payment) nextErrors.payment = "Choose a payment method."; setErrors(nextErrors); if (Object.keys(nextErrors).length) return; const nextExpense = { ...form, amount: Number(form.amount), name: form.name.trim() || form.category, merchant: form.merchant.trim(), categoryGroup: form.categoryGroup || categoryGroupFor(form.frequency, form.category), category: form.category, subcategory: form.category, status: isFuture ? "planned" : "actual", planNote: isFuture ? (form.planNote || "").trim() : "", reminder: isFuture ? (form.reminder || "both") : "none", id: form.id || crypto.randomUUID(), color: form.color || "sage" }; if (editing) setPendingAction({ type: "save", expense: nextExpense }); else onSave(nextExpense); };
+  const submit = (event) => { event.preventDefault(); const nextErrors = {}; if (!Number(form.amount) || Number(form.amount) <= 0) nextErrors.amount = "Enter an amount greater than zero."; if (Number(form.amount) > 10000000) nextErrors.amount = "Amount must be below ₹1,00,00,000."; if (!form.payment) nextErrors.payment = "Choose a payment method."; setErrors(nextErrors); if (Object.keys(nextErrors).length) return; const nextExpense = { ...form, amount: Number(form.amount), name: form.name.trim() || form.category, merchant: form.merchant.trim(), categoryGroup: form.categoryGroup || categoryGroupFor(form.frequency, form.category), category: form.category, subcategory: form.category, status: isFuture ? "planned" : "actual", planNote: isFuture ? (form.planNote || "").trim() : "", reminder: isFuture ? (form.reminder || "both") : "none", id: form.id || newId(), color: form.color || "sage" }; if (editing) setPendingAction({ type: "save", expense: nextExpense }); else onSave(nextExpense); };
   useEffect(() => { const closeOnEscape = (event) => { if (event.key === "Escape" && !document.querySelector(".date-popover, .expense-action-dialog")) onClose(); }; window.addEventListener("keydown", closeOnEscape); return () => window.removeEventListener("keydown", closeOnEscape); }, [onClose]);
   let impact = <><span>{monthLabel(formMonth)} budget after this expense</span><strong>{formatINR(projectedBudgetSpent)} used <b>{formatINR(Math.max(targetBudget - projectedBudgetSpent, 0))} left</b></strong></>;
   if (selectedAdvance) impact = <><span>Advance ledger · {selectedAdvance.merchant || "Merchant not named"}</span><strong>{formatINR(ledgerUsed(form.payment))} used <b>{formatINR(Math.max(Number(selectedAdvance.amountPaid) - ledgerUsed(form.payment), 0))} available</b></strong></>;
@@ -583,8 +599,10 @@ function LedgerApp({ initialState, user }) {
     return () => window.clearTimeout(timer);
   }, [saved]);
   const appearance = saved.appearance || { ...APPEARANCE_DEFAULTS, mode: saved.dark ? "dark" : "light" };
+  const language = languageDetails(saved.language).code;
   const dark = appearance.mode === "system" ? systemDark : appearance.mode === "dark";
   useEffect(() => { document.documentElement.dataset.theme = dark ? "dark" : "light"; document.documentElement.dataset.palette = appearance.palette; document.documentElement.dataset.look = appearance.look; }, [dark, appearance.palette, appearance.look]);
+  useEffect(() => { document.documentElement.lang = languageDetails(language).locale; document.title = `Pocket Ledger — ${navText(language, active)}`; }, [active, language]);
   useEffect(() => { const query = window.matchMedia("(prefers-color-scheme: dark)"); const update = (event) => setSystemDark(event.matches); query.addEventListener?.("change", update); return () => query.removeEventListener?.("change", update); }, []);
   useEffect(() => { if (!toast) return undefined; const timer = window.setTimeout(() => setToast(""), 2600); return () => window.clearTimeout(timer); }, [toast]);
   useEffect(() => { const captureInstall = (event) => { event.preventDefault(); setInstallPrompt(event); }; const markInstalled = () => { setInstalled(true); setInstallPrompt(null); }; window.addEventListener("beforeinstallprompt", captureInstall); window.addEventListener("appinstalled", markInstalled); return () => { window.removeEventListener("beforeinstallprompt", captureInstall); window.removeEventListener("appinstalled", markInstalled); }; }, []);
@@ -600,6 +618,7 @@ function LedgerApp({ initialState, user }) {
   const navigateFrequency = (nextFrequency) => transitionUpdate(() => setFrequency(nextFrequency));
   const updateAppearance = (patch) => setSaved((current) => { const currentAppearance = current.appearance || { ...APPEARANCE_DEFAULTS, mode: current.dark ? "dark" : "light" }; const nextAppearance = { ...currentAppearance, ...patch }; const nextDark = nextAppearance.mode === "system" ? systemDark : nextAppearance.mode === "dark"; return { ...current, appearance: nextAppearance, dark: nextDark }; });
   const toggleDark = () => updateAppearance({ mode: dark ? "light" : "dark" });
+  const updateLanguage = (nextLanguage) => { const resolved = languageDetails(nextLanguage).code; setSaved((current) => ({ ...current, language: resolved })); setToast(`${languageDetails(resolved).nativeName} language pack selected`); };
   const updateProfilePhoto = async (file) => {
     try {
       const profilePhoto = await prepareProfilePhoto(file);
@@ -625,7 +644,7 @@ function LedgerApp({ initialState, user }) {
   const saveGroceryItem = (item) => { const exists = (saved.groceryItems || []).some((candidate) => candidate.id === item.id); setSaved((current) => { const items = current.groceryItems || []; return { ...current, groceryItems: exists ? items.map((candidate) => candidate.id === item.id ? item : candidate) : [item, ...items] }; }); setToast(exists ? "Grocery item updated" : "Grocery item added"); };
   const changeGroceryItem = (id, patch) => setSaved((current) => ({ ...current, groceryItems: (current.groceryItems || []).map((item) => item.id === id ? { ...item, ...patch } : item) }));
   const deleteGroceryItem = (id) => { setSaved((current) => ({ ...current, groceryItems: (current.groceryItems || []).filter((item) => item.id !== id) })); setToast("Grocery item deleted"); };
-  const copyPreviousGroceryMonth = (targetMonth) => { const sourceMonth = shiftMonthKey(targetMonth, -1); const items = saved.groceryItems || []; if (items.some((item) => item.month === targetMonth)) { setToast(`${monthLabel(targetMonth)} already has a grocery list`); return; } const copies = items.filter((item) => item.month === sourceMonth).map((item) => ({ ...item, id: crypto.randomUUID(), month: targetMonth, purchased: false })); if (!copies.length) { setToast(`No items found in ${monthLabel(sourceMonth)}`); return; } setSaved((current) => ({ ...current, groceryItems: [...copies, ...(current.groceryItems || [])] })); setToast(`${copies.length} items copied from ${monthLabel(sourceMonth)}`); };
+  const copyPreviousGroceryMonth = (targetMonth) => { const sourceMonth = shiftMonthKey(targetMonth, -1); const items = saved.groceryItems || []; if (items.some((item) => item.month === targetMonth)) { setToast(`${monthLabel(targetMonth)} already has a grocery list`); return; } const copies = items.filter((item) => item.month === sourceMonth).map((item) => ({ ...item, id: newId(), month: targetMonth, purchased: false })); if (!copies.length) { setToast(`No items found in ${monthLabel(sourceMonth)}`); return; } setSaved((current) => ({ ...current, groceryItems: [...copies, ...(current.groceryItems || [])] })); setToast(`${copies.length} items copied from ${monthLabel(sourceMonth)}`); };
   const reset = () => { if (window.confirm("Reset all local expense data, budget and ledgers to the original demo?")) { setSaved(createDefaultState()); setToast("Demo data restored"); } };
   const installApp = async () => { if (!installPrompt) { setToast("Use your browser menu to add Pocket Ledger to the home screen"); return; } await installPrompt.prompt(); const result = await installPrompt.userChoice; if (result.outcome === "accepted") setToast("Pocket Ledger installed"); setInstallPrompt(null); };
 
@@ -633,14 +652,14 @@ function LedgerApp({ initialState, user }) {
   if (active === "transactions") view = <TransactionsView expenses={expenses} aliases={aliases} frequency={frequency} onEdit={(expense) => openEdit(expense)} onAdd={openNew} />;
   else if (active === "ledger") view = <LedgerView records={records} archives={saved.archivedExpenses || []} aliases={aliases} onEdit={(expense) => openEdit(expense, true)} onAdd={openLedgerDate} />;
   else if (active === "budget") view = <BudgetView monthlyBudget={saved.monthlyBudget} monthlyBudgets={saved.monthlyBudgets} expenses={expenses} advanceAccounts={saved.advanceAccounts} creditAccounts={saved.creditAccounts} onBudgetChange={(monthKey, monthlyBudget) => { setSaved((current) => withBudgetForMonth(current, monthKey, monthlyBudget)); setToast(`${monthLabel(monthKey)} budget saved`); }} onAccountChange={updateAccount} />;
-  else if (active === "groceries") view = <GroceryListView groceryItems={saved.groceryItems || []} onSave={saveGroceryItem} onChange={changeGroceryItem} onDelete={deleteGroceryItem} onCopyPrevious={copyPreviousGroceryMonth} />;
+  else if (active === "groceries") view = <GroceryListView groceryItems={saved.groceryItems || []} onSave={saveGroceryItem} onChange={changeGroceryItem} onDelete={deleteGroceryItem} onCopyPrevious={copyPreviousGroceryMonth} language={language} />;
   else if (active === "categories") view = <CategoriesView expenses={expenses} frequency={frequency} categoryConfig={saved.categoryConfig || {}} onChange={updateCategoryGroups} onReset={() => { resetCategoryGroups(); setToast(`${FREQUENCY_LABELS[frequency]} category order restored`); }} onNotice={setToast} />;
   else if (active === "reports") view = <ReportsView expenses={expenses} aliases={aliases} monthlyBudget={saved.monthlyBudget} monthlyBudgets={saved.monthlyBudgets} groceryItems={saved.groceryItems || []} analyticsModules={saved.analyticsModules || DEFAULT_ANALYTICS_MODULES} onModulesChange={updateAnalyticsModules} onEdit={(expense) => openEdit(expense)} />;
-  else if (active === "settings") view = <><SettingsView appearance={appearance} onAppearanceChange={updateAppearance} onReset={reset} installAvailable={Boolean(installPrompt)} installed={installed} onInstall={installApp} /><section className="module-card account-session-card"><div><strong>Signed in as {user.email}</strong><span>Your database-backed ledger is synced to this account.</span></div><button className="secondary-button" type="button" onClick={() => authClient.signOut()}>Sign out</button></section></>;
+  else if (active === "settings") view = <><SettingsView appearance={appearance} onAppearanceChange={updateAppearance} onReset={reset} installAvailable={Boolean(installPrompt)} installed={installed} onInstall={installApp} language={language} onLanguageChange={updateLanguage} /><section className="module-card account-session-card"><div><strong>Signed in as {user.email}</strong><span>Your database-backed ledger is synced to this account.</span></div><button className="secondary-button" type="button" onClick={() => authClient.signOut()}>Sign out</button></section></>;
   else view = <Dashboard expenses={expenses} aliases={aliases} frequency={frequency} monthlyBudget={saved.monthlyBudget} monthlyBudgets={saved.monthlyBudgets} advanceAccounts={saved.advanceAccounts} creditAccounts={saved.creditAccounts} onEdit={(expense) => openEdit(expense)} onViewAll={() => navigate("transactions")} />;
 
   const showFrequencyTabs = ["dashboard", "transactions", "categories"].includes(active);
-  return <div className="app-shell"><a className="skip-link" href="#main-content">Skip to main content</a><Sidebar active={active} onNavigate={navigate} dark={dark} onToggleDark={toggleDark} budgetSpent={budgetSpent} monthlyBudget={currentBudget} profilePhoto={saved.profilePhoto} onProfilePhoto={updateProfilePhoto} />{mobileMenu && <MobileMenuDrawer active={active} onNavigate={navigate} onClose={() => setMobileMenu(false)} dark={dark} onToggleDark={toggleDark} profilePhoto={saved.profilePhoto} onProfilePhoto={updateProfilePhoto} />}<main className="main-content" id="main-content" tabIndex="-1"><Header active={active} user={user} onAdd={openNew} onToggleMenu={() => setMobileMenu(true)} menuOpen={mobileMenu} />{showFrequencyTabs && <FrequencyTabs value={frequency} onChange={navigateFrequency} />}<div className="view-stage" key={`${active}-${frequency}`}>{view}</div></main><MobileNav active={active} onNavigate={navigate} />{drawer.open && <AddExpenseDrawer key={drawer.expense?.id || `new-${frequency}-${drawer.initialDate}`} expense={drawer.expense} aliases={aliases} defaultFrequency={frequency} initialDate={drawer.initialDate} defaultStatus={drawer.defaultStatus} monthlyBudget={saved.monthlyBudget} monthlyBudgets={saved.monthlyBudgets} advanceAccounts={saved.advanceAccounts} creditAccounts={saved.creditAccounts} categoryConfig={saved.categoryConfig || {}} allExpenses={expenses} onClose={closeDrawer} onSave={saveExpense} onDelete={deleteExpense} />}{toast && <div className="toast" role="status"><Check size={18} weight="bold" /> {toast}</div>}</div>;
+  return <div className="app-shell"><a className="skip-link" href="#main-content">Skip to main content</a><Sidebar active={active} onNavigate={navigate} dark={dark} onToggleDark={toggleDark} budgetSpent={budgetSpent} monthlyBudget={currentBudget} profilePhoto={saved.profilePhoto} onProfilePhoto={updateProfilePhoto} language={language} />{mobileMenu && <MobileMenuDrawer active={active} onNavigate={navigate} onClose={() => setMobileMenu(false)} dark={dark} onToggleDark={toggleDark} profilePhoto={saved.profilePhoto} onProfilePhoto={updateProfilePhoto} language={language} />}<main className="main-content" id="main-content" tabIndex="-1"><Header active={active} user={user} onAdd={openNew} onToggleMenu={() => setMobileMenu(true)} menuOpen={mobileMenu} language={language} />{showFrequencyTabs && <FrequencyTabs value={frequency} onChange={navigateFrequency} />}<div className="view-stage" key={`${active}-${frequency}`}>{view}</div></main><MobileNav active={active} onNavigate={navigate} language={language} />{drawer.open && <AddExpenseDrawer key={drawer.expense?.id || `new-${frequency}-${drawer.initialDate}`} expense={drawer.expense} aliases={aliases} defaultFrequency={frequency} initialDate={drawer.initialDate} defaultStatus={drawer.defaultStatus} monthlyBudget={saved.monthlyBudget} monthlyBudgets={saved.monthlyBudgets} advanceAccounts={saved.advanceAccounts} creditAccounts={saved.creditAccounts} categoryConfig={saved.categoryConfig || {}} allExpenses={expenses} onClose={closeDrawer} onSave={saveExpense} onDelete={deleteExpense} />}{toast && <div className="toast" role="status"><Check size={18} weight="bold" /> {toast}</div>}</div>;
 }
 
 export function App() {

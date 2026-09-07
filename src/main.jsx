@@ -11,7 +11,7 @@ createRoot(document.getElementById("root")).render(
 
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register(new URL("sw.js", document.baseURI)).catch(() => {
+    navigator.serviceWorker.register(new URL("sw.js", document.baseURI), { updateViaCache: "none" }).catch(() => {
       // The tracker remains fully usable online if registration is unavailable.
     });
   });

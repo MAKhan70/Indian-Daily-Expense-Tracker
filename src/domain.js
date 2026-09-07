@@ -22,6 +22,18 @@ export const DEFAULT_ANALYTICS_MODULES = { pie: true, bar: true, trend: true, pi
 export const GROCERY_GROUPS = ["General Grocery", "Grains & Flour", "Rice & Cereals", "Pulses & Lentils", "Spices & Masala", "Cooking Oils & Ghee", "Vegetables", "Fruits", "Dairy & Eggs", "Tea, Coffee & Beverages", "Snacks & Breakfast", "Dry Fruits & Nuts", "Household Cleaning", "Personal Care", "Baby & Pet Care", "Other"];
 export const GROCERY_UNITS = ["item", "kg", "g", "litre", "ml", "pack", "piece", "dozen", "bottle", "box", "bag"];
 
+export function newId() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  if (globalThis.crypto?.getRandomValues) {
+    const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const value = [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+    return `${value.slice(0, 8)}-${value.slice(8, 12)}-${value.slice(12, 16)}-${value.slice(16, 20)}-${value.slice(20)}`;
+  }
+  return `legacy-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 export const QUICK_AMOUNTS = {
   daily: [5, 10, 20, 100],
   weekly: Array.from({ length: 10 }, (_, index) => (index + 1) * 100),
@@ -138,10 +150,10 @@ export function managedCategoryGroups(categoryConfig, frequency) {
   const builtInByName = new Map(builtIn.map((group) => [group.name.toLocaleLowerCase("en-IN"), group]));
   const normalized = configured.filter((group) => group && typeof group.name === "string").map((group) => {
     const fallback = builtInById.get(group.id) || builtInByName.get(group.name.toLocaleLowerCase("en-IN"));
-    const subcategories = Array.isArray(group.subcategories) ? group.subcategories.filter((item) => item && typeof item.name === "string").map((item) => ({ id: item.id || crypto.randomUUID(), name: item.name, enabled: item.enabled !== false, custom: Boolean(item.custom) })) : [];
+    const subcategories = Array.isArray(group.subcategories) ? group.subcategories.filter((item) => item && typeof item.name === "string").map((item) => ({ id: item.id || newId(), name: item.name, enabled: item.enabled !== false, custom: Boolean(item.custom) })) : [];
     const knownIds = new Set(subcategories.map((item) => item.id));
     for (const item of fallback?.subcategories || []) if (!knownIds.has(item.id)) subcategories.push(item);
-    return { id: group.id || fallback?.id || crypto.randomUUID(), name: group.name, enabled: group.enabled !== false, custom: Boolean(group.custom), subcategories: subcategories.length ? subcategories : (fallback?.subcategories || []) };
+    return { id: group.id || fallback?.id || newId(), name: group.name, enabled: group.enabled !== false, custom: Boolean(group.custom), subcategories: subcategories.length ? subcategories : (fallback?.subcategories || []) };
   });
   const knownGroupIds = new Set(normalized.map((group) => group.id));
   for (const group of builtIn) if (!knownGroupIds.has(group.id)) normalized.push(group);
@@ -355,10 +367,11 @@ export function createDefaultState() {
     analyticsModules: { ...DEFAULT_ANALYTICS_MODULES },
     groceryItems: [],
     profilePhoto: "",
+    language: "en",
   };
 }
 
-export function upsertExpenseWithArchive(state, nextExpense, archivedAt = new Date().toISOString(), archiveId = crypto.randomUUID()) {
+export function upsertExpenseWithArchive(state, nextExpense, archivedAt = new Date().toISOString(), archiveId = newId()) {
   const prior = state.expenses.find((item) => item.id === nextExpense.id);
   if (!prior) return { ...state, expenses: [nextExpense, ...state.expenses], archivedExpenses: state.archivedExpenses || [] };
   const archive = { ...prior, archiveId, archivedAt, archiveReason: "Edited" };
@@ -369,7 +382,7 @@ export function upsertExpenseWithArchive(state, nextExpense, archivedAt = new Da
   };
 }
 
-export function deleteExpenseWithArchive(state, id, archivedAt = new Date().toISOString(), archiveId = crypto.randomUUID()) {
+export function deleteExpenseWithArchive(state, id, archivedAt = new Date().toISOString(), archiveId = newId()) {
   const prior = state.expenses.find((item) => item.id === id);
   if (!prior) return state;
   const archive = { ...prior, archiveId, archivedAt, archiveReason: "Deleted" };
@@ -415,7 +428,7 @@ export function loadState() {
         trendParameter: ["daily", "cumulative", "budget", "payment"].includes(parsed.analyticsModules?.trendParameter) ? parsed.analyticsModules.trendParameter : "daily",
       },
       groceryItems: Array.isArray(parsed.groceryItems) ? parsed.groceryItems.map((item) => ({
-        id: String(item.id || crypto.randomUUID()),
+        id: String(item.id || newId()),
         month: isMonthKey(item.month) ? item.month : DISPLAY_MONTH,
         name: String(item.name || "Grocery item"),
         groupName: String(item.groupName || "General Grocery"),
@@ -427,6 +440,7 @@ export function loadState() {
         note: String(item.note || ""),
       })) : [],
       profilePhoto: typeof parsed.profilePhoto === "string" && parsed.profilePhoto.startsWith("data:image/") ? parsed.profilePhoto : "",
+      language: typeof parsed.language === "string" ? parsed.language : "en",
     };
   } catch {
     return fallback;

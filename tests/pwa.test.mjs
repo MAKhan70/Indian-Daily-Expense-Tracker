@@ -13,6 +13,7 @@ async function pngSize(relativePath) {
 test("provides an installable standalone web app manifest", async () => {
   const manifest = JSON.parse(await readFile(new URL("public/manifest.webmanifest", root), "utf8"));
   assert.equal(manifest.display, "standalone");
+  assert.deepEqual(manifest.display_override, ["standalone", "minimal-ui", "browser"]);
   assert.equal(manifest.start_url, "./?source=pwa");
   assert.equal(manifest.prefer_related_applications, false);
   assert.ok(manifest.name);
@@ -35,7 +36,12 @@ test("links the manifest and registers an offline application shell", async () =
   const serviceWorker = await readFile(new URL("public/sw.js", root), "utf8");
   assert.match(html, /rel="manifest" href="\.\/manifest\.webmanifest"/);
   assert.match(html, /apple-touch-icon/);
-  assert.match(main, /serviceWorker\.register\(new URL\("sw\.js", document\.baseURI\)\)/);
+  assert.match(html, /mobile-web-app-capable/);
+  assert.match(html, /viewport-fit=cover/);
+  assert.match(main, /serviceWorker\.register\(new URL\("sw\.js", document\.baseURI\), \{ updateViaCache: "none" \}\)/);
+  assert.match(serviceWorker, /pocket-ledger-shell-v10/);
+  assert.match(serviceWorker, /manifest\.webmanifest/);
+  assert.match(serviceWorker, /cache: "no-store"/);
   assert.match(serviceWorker, /request\.mode === "navigate"/);
   assert.match(serviceWorker, /caches\.match\(scopedPath\("index\.html"\)\)/);
   assert.match(serviceWorker, /url\.pathname\.startsWith\(scopedPath\("api\/"\)\)\) return/);

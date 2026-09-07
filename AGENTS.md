@@ -37,6 +37,10 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Pie, Bar and Trend charts each have their own account-synced parameter selector so users choose the analytical grouping shown in each module.
 - Expense entry uses the custom Calm Bento calendar instead of the browser's native date field, with today/yesterday shortcuts, month navigation, clear selected/today states, and a mobile bottom-sheet treatment.
 - Monthly Grocery List is a standalone, month-scoped planner and must never create expenses or affect budgets. It supports custom items, quantity/unit, optional unit price with calculated total, grocery segregation including custom groups, included/skipped status, purchased status, copying a previous month, and a separate analytics panel.
+- Monthly Grocery List sharing is explicitly WhatsApp-oriented and must include only included item names and quantities; prices and skipped items must never be placed in the share payload.
+- Keep English as the default language and offer all 22 Eighth Schedule Indian languages as account-synced choices. Localise the primary navigation, active page identity and grocery-planning summary first, while retaining an English fallback for untranslated operational copy.
+- Browser support targets current Android Chromium browsers plus iOS/iPadOS Safari 15 and newer. Use progressive enhancement for install prompts, sharing, image decoding and view transitions; mutable PWA shell files must never receive immutable year-long cache headers.
+- Grocery layouts must respond to their own available width and retain a phone layout on coarse-pointer landscape devices instead of switching to a desktop-like WebView arrangement.
 - Transaction rows show the recorded date immediately below each amount on desktop and mobile.
 - AI Analysis must remain privacy-first and transparent: derive insights locally from aggregate ledger totals. Do not send transaction data to an external AI provider without the user's explicit approval and a clearly described data-sharing choice.
 - Use fluid, progressive page transitions and responsive interaction polish, while fully respecting `prefers-reduced-motion`.

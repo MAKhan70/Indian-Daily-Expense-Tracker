@@ -36,5 +36,6 @@ export const emptyLedgerState = () => {
     analyticsModules: { pie: true, bar: true, trend: true, pieParameter: "payment", barParameter: "category", trendParameter: "daily" },
     groceryItems: [],
     profilePhoto: "",
+    language: "en",
   };
 };

@@ -36,6 +36,13 @@ test("persists account appearance preferences", () => {
   assert.match(preference, /themeMode\s+String/);
   assert.match(preference, /palette\s+String/);
   assert.match(preference, /look\s+String/);
+  assert.match(preference, /languageCode\s+String/);
+});
+
+test("does not pin mutable PWA shell files in a year-long browser cache", () => {
+  assert.match(server, /app\.get\("\/sw\.js", sendMutableShellFile\("sw\.js"\)\)/);
+  assert.match(server, /app\.get\("\/manifest\.webmanifest", sendMutableShellFile\("manifest\.webmanifest"\)\)/);
+  assert.match(server, /no-cache, no-store, must-revalidate/);
 });
 
 test("persists category management and analytics module preferences", () => {

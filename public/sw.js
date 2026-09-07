@@ -1,4 +1,4 @@
-const CACHE_NAME = "pocket-ledger-shell-v9";
+const CACHE_NAME = "pocket-ledger-shell-v10";
 const scopedPath = (path = "") => new URL(path, self.registration.scope).pathname;
 const APP_SHELL = [
   scopedPath(),
@@ -39,6 +39,18 @@ self.addEventListener("fetch", (event) => {
           return response;
         })
         .catch(() => caches.match(scopedPath("index.html"))),
+    );
+    return;
+  }
+
+  if (url.pathname === scopedPath("manifest.webmanifest")) {
+    event.respondWith(
+      fetch(request, { cache: "no-store" })
+        .then((response) => {
+          if (response.ok) caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
+          return response;
+        })
+        .catch(() => caches.match(request)),
     );
     return;
   }

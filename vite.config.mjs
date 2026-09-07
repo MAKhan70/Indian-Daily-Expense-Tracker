@@ -5,6 +5,8 @@ export default defineConfig({
   base: "./",
   build: {
     outDir: "dist/client",
+    target: ["es2020", "safari15"],
+    cssTarget: "safari15",
   },
   optimizeDeps: {
     include: ["react", "react-dom/client"],

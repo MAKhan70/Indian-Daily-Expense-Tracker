@@ -194,6 +194,7 @@ model UserPreference {
   categoryConfigJson    String   @default("{}")
   analyticsModulesJson String   @default("{\"pie\":true,\"bar\":true,\"trend\":true}")
   profilePhoto         String?
+  languageCode         String   @default("en")
   localImportCompleted Boolean  @default(false)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
