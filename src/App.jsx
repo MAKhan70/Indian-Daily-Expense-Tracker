@@ -21,6 +21,7 @@ import {
   upsertExpenseWithArchive, withBudgetForMonth,
 } from "./domain.js";
 import { LedgerView } from "./LedgerView.jsx";
+import { LocalizedSurface } from "./LocalizedSurface.jsx";
 import { AuthScreen, ImportChoice, ResetPasswordScreen } from "./AuthScreen.jsx";
 import { authClient } from "./auth-client.js";
 import { groceryShareText, grocerySummaryText, INDIAN_LANGUAGES, languageDetails, localizedMonthLabel, navText } from "./i18n.js";
@@ -618,7 +619,7 @@ function LedgerApp({ initialState, user }) {
   const navigateFrequency = (nextFrequency) => transitionUpdate(() => setFrequency(nextFrequency));
   const updateAppearance = (patch) => setSaved((current) => { const currentAppearance = current.appearance || { ...APPEARANCE_DEFAULTS, mode: current.dark ? "dark" : "light" }; const nextAppearance = { ...currentAppearance, ...patch }; const nextDark = nextAppearance.mode === "system" ? systemDark : nextAppearance.mode === "dark"; return { ...current, appearance: nextAppearance, dark: nextDark }; });
   const toggleDark = () => updateAppearance({ mode: dark ? "light" : "dark" });
-  const updateLanguage = (nextLanguage) => { const resolved = languageDetails(nextLanguage).code; setSaved((current) => ({ ...current, language: resolved })); setToast(`${languageDetails(resolved).nativeName} language pack selected`); };
+  const updateLanguage = (nextLanguage) => { const resolved = languageDetails(nextLanguage).code; try { localStorage.setItem("pocket-ledger-language", resolved); } catch { /* private browsing may block storage */ } setSaved((current) => ({ ...current, language: resolved })); setToast(`${languageDetails(resolved).nativeName} language pack selected`); };
   const updateProfilePhoto = async (file) => {
     try {
       const profilePhoto = await prepareProfilePhoto(file);
@@ -659,11 +660,12 @@ function LedgerApp({ initialState, user }) {
   else view = <Dashboard expenses={expenses} aliases={aliases} frequency={frequency} monthlyBudget={saved.monthlyBudget} monthlyBudgets={saved.monthlyBudgets} advanceAccounts={saved.advanceAccounts} creditAccounts={saved.creditAccounts} onEdit={(expense) => openEdit(expense)} onViewAll={() => navigate("transactions")} />;
 
   const showFrequencyTabs = ["dashboard", "transactions", "categories"].includes(active);
-  return <div className="app-shell"><a className="skip-link" href="#main-content">Skip to main content</a><Sidebar active={active} onNavigate={navigate} dark={dark} onToggleDark={toggleDark} budgetSpent={budgetSpent} monthlyBudget={currentBudget} profilePhoto={saved.profilePhoto} onProfilePhoto={updateProfilePhoto} language={language} />{mobileMenu && <MobileMenuDrawer active={active} onNavigate={navigate} onClose={() => setMobileMenu(false)} dark={dark} onToggleDark={toggleDark} profilePhoto={saved.profilePhoto} onProfilePhoto={updateProfilePhoto} language={language} />}<main className="main-content" id="main-content" tabIndex="-1"><Header active={active} user={user} onAdd={openNew} onToggleMenu={() => setMobileMenu(true)} menuOpen={mobileMenu} language={language} />{showFrequencyTabs && <FrequencyTabs value={frequency} onChange={navigateFrequency} />}<div className="view-stage" key={`${active}-${frequency}`}>{view}</div></main><MobileNav active={active} onNavigate={navigate} language={language} />{drawer.open && <AddExpenseDrawer key={drawer.expense?.id || `new-${frequency}-${drawer.initialDate}`} expense={drawer.expense} aliases={aliases} defaultFrequency={frequency} initialDate={drawer.initialDate} defaultStatus={drawer.defaultStatus} monthlyBudget={saved.monthlyBudget} monthlyBudgets={saved.monthlyBudgets} advanceAccounts={saved.advanceAccounts} creditAccounts={saved.creditAccounts} categoryConfig={saved.categoryConfig || {}} allExpenses={expenses} onClose={closeDrawer} onSave={saveExpense} onDelete={deleteExpense} />}{toast && <div className="toast" role="status"><Check size={18} weight="bold" /> {toast}</div>}</div>;
+  return <LocalizedSurface language={language} page={navText(language, active)}><div className="app-shell"><a className="skip-link" href="#main-content">Skip to main content</a><Sidebar active={active} onNavigate={navigate} dark={dark} onToggleDark={toggleDark} budgetSpent={budgetSpent} monthlyBudget={currentBudget} profilePhoto={saved.profilePhoto} onProfilePhoto={updateProfilePhoto} language={language} />{mobileMenu && <MobileMenuDrawer active={active} onNavigate={navigate} onClose={() => setMobileMenu(false)} dark={dark} onToggleDark={toggleDark} profilePhoto={saved.profilePhoto} onProfilePhoto={updateProfilePhoto} language={language} />}<main className="main-content" id="main-content" tabIndex="-1"><Header active={active} user={user} onAdd={openNew} onToggleMenu={() => setMobileMenu(true)} menuOpen={mobileMenu} language={language} />{showFrequencyTabs && <FrequencyTabs value={frequency} onChange={navigateFrequency} />}<div className="view-stage" key={`${active}-${frequency}`}>{view}</div></main><MobileNav active={active} onNavigate={navigate} language={language} />{drawer.open && <AddExpenseDrawer key={drawer.expense?.id || `new-${frequency}-${drawer.initialDate}`} expense={drawer.expense} aliases={aliases} defaultFrequency={frequency} initialDate={drawer.initialDate} defaultStatus={drawer.defaultStatus} monthlyBudget={saved.monthlyBudget} monthlyBudgets={saved.monthlyBudgets} advanceAccounts={saved.advanceAccounts} creditAccounts={saved.creditAccounts} categoryConfig={saved.categoryConfig || {}} allExpenses={expenses} onClose={closeDrawer} onSave={saveExpense} onDelete={deleteExpense} />}{toast && <div className="toast" role="status"><Check size={18} weight="bold" /> {toast}</div>}</div></LocalizedSurface>;
 }
 
 export function App() {
-  if (window.location.pathname.endsWith("/reset-password")) return <ResetPasswordScreen />;
+  const persistedLanguage = (() => { try { return languageDetails(localStorage.getItem("pocket-ledger-language") || "en").code; } catch { return "en"; } })();
+  if (window.location.pathname.endsWith("/reset-password")) return <LocalizedSurface language={persistedLanguage} page="Password reset"><ResetPasswordScreen /></LocalizedSurface>;
   const session = authClient.useSession();
   const [ledger, setLedger] = useState(null);
   const [localState] = useState(loadState);
@@ -693,9 +695,9 @@ export function App() {
     finally { setSetupBusy(false); }
   };
 
-  if (session.isPending) return <main className="app-loading"><span className="brand-mark"><Wallet weight="fill" /></span><strong>Opening Pocket Ledger…</strong></main>;
-  if (!session.data?.user) return <AuthScreen />;
-  if (needsChoice) return <ImportChoice state={localState} onImport={() => chooseStart("import")} onFresh={() => chooseStart("fresh")} busy={setupBusy} message={setupMessage} />;
-  if (!ledger) return <main className="app-loading"><span className="brand-mark"><Wallet weight="fill" /></span><strong>{setupMessage || "Loading your secure ledger…"}</strong></main>;
+  if (session.isPending) return <LocalizedSurface language={persistedLanguage} page="Pocket Ledger"><main className="app-loading"><span className="brand-mark"><Wallet weight="fill" /></span><strong>Opening Pocket Ledger…</strong></main></LocalizedSurface>;
+  if (!session.data?.user) return <LocalizedSurface language={persistedLanguage} page="Sign in"><AuthScreen /></LocalizedSurface>;
+  if (needsChoice) return <LocalizedSurface language={persistedLanguage} page="Pocket Ledger"><ImportChoice state={localState} onImport={() => chooseStart("import")} onFresh={() => chooseStart("fresh")} busy={setupBusy} message={setupMessage} /></LocalizedSurface>;
+  if (!ledger) return <LocalizedSurface language={persistedLanguage} page="Pocket Ledger"><main className="app-loading"><span className="brand-mark"><Wallet weight="fill" /></span><strong>{setupMessage || "Loading your secure ledger…"}</strong></main></LocalizedSurface>;
   return <LedgerApp key={session.data.user.id} initialState={ledger} user={session.data.user} />;
 }
