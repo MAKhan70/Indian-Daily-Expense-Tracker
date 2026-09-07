@@ -24,7 +24,7 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Future planned expenses remain outside completed-spend totals until converted to an actual entry and support in-app month-before, week-before, both, or no reminder.
 - Every recorded-expense edit and deletion requires a confirmation popup explaining that the active value changes, the prior value is archived, and dependent totals recalculate; do not use acknowledgement checkboxes.
 - Preserve prior values as read-only, timestamped Archived snapshots whenever an expense is edited or deleted.
-- Ship Pocket Ledger as an installable HTTPS PWA with standalone display metadata, 192px/512px/maskable/Apple icons, an offline application shell, and an in-app install entry point.
+- The product name is NASAQ Ledger. Ship it as an installable HTTPS PWA with standalone display metadata, 192px/512px/maskable/Apple icons, an offline application shell, and an in-app install entry point.
 - Prisma and account-backed synchronization are now authorized. Keep every finance query scoped by authenticated user ID, retain the one-time guarded local import, and never cache `/api` responses in the service worker.
 - Keep the frontend and Better Auth API on the same production origin so mobile browsers can use secure first-party session cookies reliably.
 - Dashboard greetings must show the authenticated user's name and derive the date and morning/afternoon/evening period explicitly from Asia/Kolkata time.

@@ -16,7 +16,8 @@ test("provides an installable standalone web app manifest", async () => {
   assert.deepEqual(manifest.display_override, ["standalone", "minimal-ui", "browser"]);
   assert.equal(manifest.start_url, "./?source=pwa");
   assert.equal(manifest.prefer_related_applications, false);
-  assert.ok(manifest.name);
+  assert.equal(manifest.name, "NASAQ Ledger — Daily Expense Tracker");
+  assert.equal(manifest.short_name, "NASAQ Ledger");
   assert.ok(manifest.short_name);
   assert.ok(manifest.icons.some((icon) => icon.sizes === "192x192"));
   assert.ok(manifest.icons.some((icon) => icon.sizes === "512x512"));
@@ -39,7 +40,7 @@ test("links the manifest and registers an offline application shell", async () =
   assert.match(html, /mobile-web-app-capable/);
   assert.match(html, /viewport-fit=cover/);
   assert.match(main, /serviceWorker\.register\(new URL\("sw\.js", document\.baseURI\), \{ updateViaCache: "none" \}\)/);
-  assert.match(serviceWorker, /pocket-ledger-shell-v10/);
+  assert.match(serviceWorker, /nasaq-ledger-shell-v11/);
   assert.match(serviceWorker, /manifest\.webmanifest/);
   assert.match(serviceWorker, /cache: "no-store"/);
   assert.match(serviceWorker, /request\.mode === "navigate"/);

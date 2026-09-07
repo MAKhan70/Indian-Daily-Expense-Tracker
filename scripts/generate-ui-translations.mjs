@@ -1,7 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 
 const files = ["src/App.jsx", "src/AuthScreen.jsx", "src/LedgerView.jsx"];
-const sources = (await Promise.all(files.map((file) => readFile(file, "utf8")))).join("\n");
+const sources = (await Promise.all(files.map((file) => readFile(file, "utf8")))).join("\n").replaceAll("Pocket Ledger", "NASAQ Ledger");
 const phrases = new Set();
 for (const match of sources.matchAll(/>([^<>{}\n]*[A-Za-z][^<>{}\n]*)</g)) phrases.add(match[1].replace(/\s+/g, " ").trim());
 for (const match of sources.matchAll(/(?:aria-label|placeholder|title)="([^"]*[A-Za-z][^"]*)"/g)) phrases.add(match[1].trim());
@@ -29,12 +29,12 @@ await Promise.all(Object.entries(languageTargets).map(async ([code, target]) => 
   for (let offset = 0; offset < keys.length; offset += 18) {
     const batch = keys.slice(offset, offset + 18);
     const params = new URLSearchParams({ client: "dict-chrome-ex", sl: "en", tl: target });
-    batch.forEach((text) => params.append("q", text));
+    batch.forEach((text) => params.append("q", text.replaceAll("NASAQ Ledger", "__NASAQ_LEDGER__")));
     const response = await fetch(`https://clients5.google.com/translate_a/t?${params}`);
     if (!response.ok) throw new Error(`${code} translation failed with ${response.status}`);
     const result = await response.json();
     const values = Array.isArray(result) ? result : [result];
-    batch.forEach((key, index) => { translations[code][key] = String(values[index] ?? key); });
+    batch.forEach((key, index) => { translations[code][key] = String(values[index] ?? key).replaceAll("__NASAQ_LEDGER__", "NASAQ Ledger").replaceAll("NASAQ_LEDGER", "NASAQ Ledger"); });
   }
   process.stdout.write(`${code} ${Object.keys(translations[code]).length}\n`);
 }));

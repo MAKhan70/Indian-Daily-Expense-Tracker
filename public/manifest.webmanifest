@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "Pocket Ledger — Daily Expense Tracker",
-  "short_name": "Pocket Ledger",
+  "name": "NASAQ Ledger — Daily Expense Tracker",
+  "short_name": "NASAQ Ledger",
   "description": "Track Indian household expenses, monthly budgets, merchant advances, credit limits and planned payments.",
   "start_url": "./?source=pwa",
   "scope": "./",

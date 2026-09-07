@@ -145,10 +145,13 @@ export function textDirection(code = "en") {
 }
 
 export function uiText(code = "en", english = "") {
+  if (typeof english !== "string") return english;
+  const brandedEnglish = english.replaceAll("Pocket Ledger", "NASAQ Ledger");
   const resolved = languageDetails(code).code;
-  if (resolved === "en" || typeof english !== "string") return english;
-  const trimmed = english.trim();
-  if (!trimmed) return english;
+  if (resolved === "en") return brandedEnglish;
+  const trimmed = brandedEnglish.trim();
+  if (!trimmed) return brandedEnglish;
+  if (trimmed === "NASAQ Ledger") return "NASAQ Ledger";
   const navIndex = NAV_PACKS.en.indexOf(trimmed);
   if (navIndex >= 0) return (NAV_PACKS[resolved] || NAV_PACKS.en)[navIndex];
   const coreIndex = CORE_KEYS.indexOf(trimmed);
@@ -156,18 +159,31 @@ export function uiText(code = "en", english = "") {
   if (resolved === "hi" && HINDI_PHRASES[trimmed]) return HINDI_PHRASES[trimmed];
   const summaryIndex = SUMMARY_PACKS.en.indexOf(trimmed);
   if (summaryIndex >= 0) return (SUMMARY_PACKS[resolved] || SUMMARY_PACKS[RELATED_PACK[resolved]] || SUMMARY_PACKS.en)[summaryIndex];
-  if (GENERATED_UI_TRANSLATIONS[resolved]?.[trimmed]) return GENERATED_UI_TRANSLATIONS[resolved][trimmed];
-  return english;
+  const generatedKey = trimmed.replaceAll("Pocket Ledger", "NASAQ Ledger");
+  if (GENERATED_UI_TRANSLATIONS[resolved]?.[generatedKey]) {
+    const translated = GENERATED_UI_TRANSLATIONS[resolved][generatedKey];
+    const localizedBrand = GENERATED_UI_TRANSLATIONS[resolved]["NASAQ Ledger"];
+    return trimmed.includes("NASAQ Ledger") && localizedBrand ? translated.replaceAll(localizedBrand, "NASAQ Ledger") : translated;
+  }
+  return brandedEnglish;
 }
 
 export function translateDisplayText(code = "en", source = "") {
   const resolved = languageDetails(code).code;
-  if (resolved === "en" || typeof source !== "string") return source;
+  if (typeof source !== "string") return source;
+  if (resolved === "en") return source.replaceAll("Pocket Ledger", "NASAQ Ledger");
   const exact = uiText(resolved, source);
   if (exact !== source) return exact;
   const leading = source.match(/^\s*/)?.[0] || "";
   const trailing = source.match(/\s*$/)?.[0] || "";
   const body = source.slice(leading.length, source.length - trailing.length);
+  const longDate = body.match(/^(?:(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday),\s+)?(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})(.*)$/);
+  if (longDate) {
+    const monthIndex = ["January","February","March","April","May","June","July","August","September","October","November","December"].indexOf(longDate[3]);
+    const date = new Date(Date.UTC(Number(longDate[4]), monthIndex, Number(longDate[2])));
+    const localized = new Intl.DateTimeFormat(languageDetails(resolved).locale, { ...(longDate[1] ? { weekday: "long" } : {}), day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(date);
+    return `${leading}${localized}${longDate[5]}${trailing}`;
+  }
   const localizeMonth = (value) => {
     const match = value.match(/^(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})(.*)$/);
     if (!match) return value;
@@ -228,12 +244,12 @@ export function groceryShareText(items, monthKey, code = "en") {
     (result[item.groupName] ||= []).push(item);
     return result;
   }, {});
-  const lines = [`🛒 Pocket Ledger — ${localizedMonthLabel(monthKey, code)} ${navText(code, "groceries")}`, ""];
+  const lines = [`🛒 NASAQ Ledger — ${localizedMonthLabel(monthKey, code)} ${navText(code, "groceries")}`, ""];
   Object.entries(groups).sort(([a], [b]) => a.localeCompare(b)).forEach(([group, groupItems]) => {
     lines.push(`*${group}*`);
     groupItems.forEach((item) => lines.push(`${item.purchased ? "✅" : "•"} ${item.name} — ${item.quantity} ${item.unit}`));
     lines.push("");
   });
-  lines.push("Prices intentionally excluded · Shared from Pocket Ledger");
+  lines.push("Prices intentionally excluded · Shared from NASAQ Ledger");
   return lines.join("\n");
 }

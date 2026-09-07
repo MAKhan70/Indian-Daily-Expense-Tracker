@@ -16,12 +16,18 @@ test("ships English plus all 22 scheduled Indian language packs", () => {
 
 test("every shipped language localises common application controls", () => {
   for (const language of INDIAN_LANGUAGES.slice(1)) {
-    assert.ok(Object.keys(GENERATED_UI_TRANSLATIONS[language.code]).length >= 400, `${language.code} complete UI catalog`);
+    assert.ok(Object.keys(GENERATED_UI_TRANSLATIONS[language.code]).length >= 1000, `${language.code} complete UI and domain catalog`);
     assert.notEqual(uiText(language.code, "Add expense"), "Add expense", language.code);
     assert.notEqual(uiText(language.code, "Payment method / mode"), "Payment method / mode", language.code);
     assert.notEqual(uiText(language.code, "Sign out"), "Sign out", language.code);
   }
   assert.equal(translateDisplayText("hi", "Today · August 2026"), "आज · अगस्त 2026");
+  assert.notEqual(uiText("ur", "Vegetables & Fruits"), "Vegetables & Fruits");
+  assert.notEqual(uiText("hi", "General Grocery"), "General Grocery");
+  assert.notEqual(uiText("bn", "Cash"), "Cash");
+  assert.equal(uiText("ur", "Pocket Ledger"), "NASAQ Ledger");
+  assert.match(uiText("hi", "Install Pocket Ledger"), /NASAQ Ledger/);
+  assert.notEqual(translateDisplayText("ur", "Monday, 7 September 2026"), "Monday, 7 September 2026");
 });
 
 test("Urdu, Kashmiri and Sindhi use right-to-left document direction", () => {

@@ -46,7 +46,7 @@ export function LocalizedSurface({ language = "en", page = "dashboard", children
     observer.observe(root, { childList: true, subtree: true, characterData: true });
     document.documentElement.lang = languageDetails(language).locale;
     document.documentElement.dir = textDirection(language);
-    document.title = `Pocket Ledger — ${translateDisplayText(language, page)}`;
+    document.title = `NASAQ Ledger — ${translateDisplayText(language, page)}`;
     try { localStorage.setItem("pocket-ledger-language", language); } catch { /* storage can be unavailable in private mode */ }
     return () => observer.disconnect();
   }, [language, page]);

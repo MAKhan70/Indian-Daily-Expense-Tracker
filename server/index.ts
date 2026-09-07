@@ -62,5 +62,5 @@ export function createServer() {
 
 if (process.env.NODE_ENV !== "test") {
   const port = Number(process.env.PORT || 3001);
-  createServer().listen(port, "0.0.0.0", () => console.log(`Pocket Ledger API listening on ${port}`));
+  createServer().listen(port, "0.0.0.0", () => console.log(`NASAQ Ledger API listening on ${port}`));
 }

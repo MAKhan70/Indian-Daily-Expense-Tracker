@@ -1104,3 +1104,63 @@ body { accent-color: var(--plum); }
   .page-header { min-height: 94px; align-items: flex-start; }
   .grocery-editor-card, .grocery-list-card, .grocery-hero { padding: 18px; }
 }
+
+/* RTL is resolved after every responsive rule so physical legacy margins cannot stack. */
+:root[dir="rtl"] body { text-align: start; }
+:root[dir="rtl"] :is(.chart-canvas, .budget-ring, progress) { direction: ltr; }
+:root[dir="rtl"] :is(input[type="email"], input[type="number"], input[type="date"], input[type="month"], .transaction-amount, .transaction-amount-cell) { direction: ltr; text-align: start; }
+:root[dir="rtl"] :is(.page-header > div, .section-heading > div, .settings-heading, .module-intro, .chart-heading, .transaction-name, .profile-copy) { min-width: 0; text-align: start; }
+:root[dir="rtl"] .sidebar { inset: 0 0 0 auto; border: 0; border-left: 1px solid var(--line); }
+:root[dir="rtl"] .main-content { margin-right: 254px; margin-left: 0; }
+:root[dir="rtl"] .mobile-menu-panel { inset: 0 0 0 auto; border: 0; border-left: 1px solid var(--line); }
+:root[dir="rtl"] .grocery-group-head > span,
+:root[dir="rtl"] .grocery-item-total { text-align: start; }
+
+@media (max-width: 1180px) and (min-width: 761px) {
+  :root[dir="rtl"] .main-content { margin-right: 220px; margin-left: 0; }
+}
+
+@media (max-width: 760px), (hover: none) and (pointer: coarse) and (max-height: 520px) {
+  :root[dir="rtl"] .main-content { margin: 0; }
+  :root[dir="rtl"] .mobile-menu-panel { width: min(350px, 88dvw); }
+}
+
+/* NASAQ dual identity: A rests; menu interaction reveals the ledger-grid B mark. */
+.nasaq-brand-mark {
+  position: relative;
+  flex: 0 0 auto;
+  overflow: hidden;
+  color: #2b123b;
+  background: #faf6ee;
+  box-shadow: 0 7px 20px rgba(43, 18, 59, .16);
+}
+.nasaq-brand-mark svg { width: 82%; height: 82%; display: block; overflow: visible; }
+.nasaq-brand-mark g { transform-box: fill-box; transform-origin: center; }
+.nasaq-logo-b { opacity: 0; transform: scale(.84) rotate(-3deg); }
+.nasaq-logo-b .nasaq-grid { fill: none; stroke: #faf6ee; stroke-width: 1.4; }
+.nasaq-logo-b .nasaq-cutout { fill: none; stroke: #faf6ee; stroke-width: 7; stroke-linecap: square; stroke-linejoin: bevel; }
+.nasaq-brand-mark .nasaq-accent,
+.nasaq-brand-mark .nasaq-dot { fill: #d99535; }
+.nasaq-brand-mark.is-switching .nasaq-logo-a { animation: nasaq-a-to-b 980ms cubic-bezier(.22,.8,.24,1) both; }
+.nasaq-brand-mark.is-switching .nasaq-logo-b { animation: nasaq-b-reveal 980ms cubic-bezier(.22,.8,.24,1) both; }
+
+@keyframes nasaq-a-to-b {
+  0%, 18%, 100% { opacity: 1; transform: scale(1) rotate(0); }
+  31%, 74% { opacity: 0; transform: scale(.82) rotate(3deg); }
+  88% { opacity: 1; transform: scale(1.03) rotate(0); }
+}
+@keyframes nasaq-b-reveal {
+  0%, 18%, 88%, 100% { opacity: 0; transform: scale(.84) rotate(-3deg); }
+  31%, 68% { opacity: 1; transform: scale(1) rotate(0); }
+  76% { opacity: 1; transform: scale(1.04) rotate(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nasaq-brand-mark.is-switching .nasaq-logo-a,
+  .nasaq-brand-mark.is-switching .nasaq-logo-b { animation: none; }
+}
+
+@media (min-width: 761px) {
+  :root[dir="rtl"] .sidebar { inset: 0 0 auto; border: 0; border-bottom: 1px solid var(--line); }
+  :root[dir="rtl"] .main-content { margin: 0 auto; }
+}

@@ -23,6 +23,25 @@ test("mobile navigation is a top-left drawer rather than a centered sheet", () =
   assert.doesNotMatch(mobileNav, /mobile-add|Add expense/);
 });
 
+test("NASAQ identity switches from concept A to B on menu interaction", () => {
+  assert.match(appSource, /function AnimatedBrandMark/);
+  assert.match(appSource, /className="nasaq-logo-a"/);
+  assert.match(appSource, /className="nasaq-logo-b"/);
+  assert.match(appSource, /const \[brandPulse, setBrandPulse\] = useState\(0\)/);
+  assert.match(appSource, /onToggleMenu=\{\(\) => \{ animateBrand\(\); setMobileMenu\(true\); \}\}/);
+  assert.match(styles, /@keyframes nasaq-a-to-b/);
+  assert.match(styles, /@keyframes nasaq-b-reveal/);
+  assert.match(styles, /prefers-reduced-motion: reduce/);
+});
+
+test("RTL layouts resolve physical margins after all responsive rules", () => {
+  assert.match(styles, /\/\* RTL is resolved after every responsive rule/);
+  assert.match(styles, /:root\[dir="rtl"\] \.main-content \{ margin-right: 254px; margin-left: 0; \}/);
+  assert.match(styles, /:root\[dir="rtl"\] \.main-content \{ margin: 0; \}/);
+  assert.match(styles, /:root\[dir="rtl"\] \.mobile-menu-panel \{ width: min\(350px, 88dvw\); \}/);
+  assert.match(styles, /:root\[dir="rtl"\] \.main-content \{ margin: 0 auto; \}/);
+});
+
 test("expense entry follows the requested classification and amount order", () => {
   const drawer = appSource.slice(appSource.indexOf("function AddExpenseDrawer"), appSource.indexOf("export default function App"));
   const labels = [
@@ -77,7 +96,7 @@ test("analytics exposes selectable chart modules and private AI analysis", () =>
   assert.match(reports, /modules\.bar/);
   assert.match(reports, /modules\.trend/);
   assert.match(reports, />AI Analysis</);
-  assert.match(reports, /nothing is sent outside Pocket Ledger/);
+  assert.match(reports, /nothing is sent outside NASAQ Ledger/);
   assert.match(reports, /id="pie-parameter"/);
   assert.match(reports, /id="bar-parameter"/);
   assert.match(reports, /id="trend-parameter"/);

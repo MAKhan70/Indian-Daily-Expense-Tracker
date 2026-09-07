@@ -13,7 +13,7 @@ const trustedOrigins = (process.env.TRUSTED_ORIGINS || ["http://localhost:5173",
 const trustedProxies = (process.env.TRUSTED_PROXY_CIDRS || "127.0.0.1/32,::1/128").split(",").map((value) => value.trim()).filter(Boolean);
 
 export const auth = betterAuth({
-  appName: "Pocket Ledger",
+  appName: "NASAQ Ledger",
   baseURL: publicURL,
   trustedOrigins,
   database: prismaAdapter(prisma, { provider: "sqlite" }),
@@ -24,12 +24,12 @@ export const auth = betterAuth({
     revokeSessionsOnPasswordReset: true,
     requireEmailVerification: process.env.REQUIRE_EMAIL_VERIFICATION === "true",
     sendResetPassword: async ({ user, url }) => {
-      void sendAuthEmail({ to: user.email, subject: "Reset your Pocket Ledger password", text: `Reset your password using this secure link: ${url}` });
+      void sendAuthEmail({ to: user.email, subject: "Reset your NASAQ Ledger password", text: `Reset your password using this secure link: ${url}` });
     },
   },
   emailVerification: {
     sendVerificationEmail: async ({ user, url }) => {
-      void sendAuthEmail({ to: user.email, subject: "Verify your Pocket Ledger email", text: `Verify your email using this secure link: ${url}` });
+      void sendAuthEmail({ to: user.email, subject: "Verify your NASAQ Ledger email", text: `Verify your email using this secure link: ${url}` });
     },
   },
   session: {

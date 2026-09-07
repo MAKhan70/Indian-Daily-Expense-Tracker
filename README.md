@@ -1,6 +1,6 @@
-# Pocket Ledger
+# NASAQ Ledger
 
-Pocket Ledger is an installable Indian daily expense tracker with Daily, Weekly, Monthly and One-off ledgers, monthly budgets, merchant advances, credit limits and payment-mode analytics.
+NASAQ Ledger is an installable Indian daily expense tracker with Daily, Weekly, Monthly and One-off ledgers, monthly budgets, merchant advances, credit limits and payment-mode analytics.
 
 ## Full-stack architecture
 
