@@ -22,13 +22,14 @@ test("provides an installable standalone web app manifest", async () => {
   assert.ok(manifest.icons.some((icon) => icon.sizes === "192x192"));
   assert.ok(manifest.icons.some((icon) => icon.sizes === "512x512"));
   assert.ok(manifest.icons.some((icon) => icon.purpose === "maskable"));
+  assert.ok(manifest.icons.every((icon) => icon.src.includes("nasaq-")));
 });
 
 test("ships correctly sized PWA and Apple icons", async () => {
-  assert.deepEqual(await pngSize("public/icons/icon-192.png"), { width: 192, height: 192 });
-  assert.deepEqual(await pngSize("public/icons/icon-512.png"), { width: 512, height: 512 });
-  assert.deepEqual(await pngSize("public/icons/maskable-512.png"), { width: 512, height: 512 });
-  assert.deepEqual(await pngSize("public/icons/apple-touch-icon.png"), { width: 180, height: 180 });
+  assert.deepEqual(await pngSize("public/icons/nasaq-icon-192-v1.png"), { width: 192, height: 192 });
+  assert.deepEqual(await pngSize("public/icons/nasaq-icon-512-v1.png"), { width: 512, height: 512 });
+  assert.deepEqual(await pngSize("public/icons/nasaq-maskable-512-v1.png"), { width: 512, height: 512 });
+  assert.deepEqual(await pngSize("public/icons/nasaq-apple-touch-icon-v1.png"), { width: 180, height: 180 });
 });
 
 test("links the manifest and registers an offline application shell", async () => {
@@ -40,7 +41,9 @@ test("links the manifest and registers an offline application shell", async () =
   assert.match(html, /mobile-web-app-capable/);
   assert.match(html, /viewport-fit=cover/);
   assert.match(main, /serviceWorker\.register\(new URL\("sw\.js", document\.baseURI\), \{ updateViaCache: "none" \}\)/);
-  assert.match(serviceWorker, /nasaq-ledger-shell-v11/);
+  assert.match(html, /nasaq-apple-touch-icon-v1\.png/);
+  assert.match(serviceWorker, /nasaq-ledger-shell-v12/);
+  assert.match(serviceWorker, /nasaq-icon-512-v1\.png/);
   assert.match(serviceWorker, /manifest\.webmanifest/);
   assert.match(serviceWorker, /cache: "no-store"/);
   assert.match(serviceWorker, /request\.mode === "navigate"/);

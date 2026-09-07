@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">NASAQ Ledger</title>
+  <desc id="desc">A geometric N made from daily ledger strokes with a saffron accent.</desc>
+  <rect width="512" height="512" fill="#faf6ee"/>
+  <g fill="#2b123b">
+    <rect x="77" y="83" width="40" height="346" rx="20"/>
+    <rect x="142" y="111" width="40" height="318" rx="20"/>
+  </g>
+  <path d="M236 409V188L349 320V103" fill="none" stroke="#2b123b" stroke-width="43" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="412" y="83" width="31" height="346" rx="15.5" fill="#d99535"/>
+</svg>

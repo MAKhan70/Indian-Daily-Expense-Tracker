@@ -19,6 +19,15 @@ function dateKey(year, monthIndex, day) {
   return `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
+function formatCalendarAmount(amount) {
+  const value = Number(amount) || 0;
+  const compact = (divisor, suffix) => `₹${(value / divisor).toFixed(value % divisor === 0 ? 0 : 1).replace(/\.0$/, "")}${suffix}`;
+  if (value >= 10_000_000) return compact(10_000_000, "Cr");
+  if (value >= 100_000) return compact(100_000, "L");
+  if (value >= 1_000) return compact(1_000, "K");
+  return formatINR(value);
+}
+
 function daysFromToday(key) {
   const target = new Date(`${key}T12:00:00+05:30`);
   const today = new Date(`${DISPLAY_DATE}T12:00:00+05:30`);
@@ -79,7 +88,7 @@ export function LedgerView({ records, archives, aliases, onEdit, onAdd }) {
           <div className="ledger-actions"><button type="button" className="secondary-button" onClick={() => { setCursor({ year: initial.year, month: initial.month - 1 }); setSelectedDate(DISPLAY_DATE); }}>Today</button><button type="button" className={showArchive ? "secondary-button active" : "secondary-button"} onClick={() => setShowArchive((value) => !value)} aria-expanded={showArchive}><Archive size={18} /> Archived <span>{archives.length}</span></button></div>
         </div>
         <div className="calendar-grid calendar-labels">{["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => <span key={day}>{day}</span>)}</div>
-        <div className="calendar-grid">{Array.from({ length: firstDayOffset }, (_, index) => <span className="calendar-blank" key={`blank-${index}`} />)}{Array.from({ length: daysInMonth }, (_, index) => index + 1).map((day) => { const key = dateKey(cursor.year, cursor.month, day); const dayRecords = monthRecords.filter((record) => record.date === key); const actualTotal = dayRecords.filter((record) => record.status !== "planned").reduce((sum, record) => sum + Number(record.amount), 0); const planned = dayRecords.filter((record) => record.status === "planned").length; return <button type="button" className={`calendar-day ${key === DISPLAY_DATE ? "today" : ""} ${key === selectedDate ? "selected" : ""} ${planned ? "has-planned" : ""}`} key={day} onClick={() => setSelectedDate(key)} aria-label={`${titleCaseDate(key)}${dayRecords.length ? `, ${dayRecords.length} entries` : ", no entries"}`}><span>{day}</span><span className="day-summary">{actualTotal > 0 && <strong>{formatINR(actualTotal)}</strong>}{planned > 0 && <small><ClockCountdown size={12} /> {planned} planned</small>}</span></button>; })}</div>
+        <div className="calendar-grid">{Array.from({ length: firstDayOffset }, (_, index) => <span className="calendar-blank" key={`blank-${index}`} />)}{Array.from({ length: daysInMonth }, (_, index) => index + 1).map((day) => { const key = dateKey(cursor.year, cursor.month, day); const dayRecords = monthRecords.filter((record) => record.date === key); const actualTotal = dayRecords.filter((record) => record.status !== "planned").reduce((sum, record) => sum + Number(record.amount), 0); const planned = dayRecords.filter((record) => record.status === "planned").length; return <button type="button" className={`calendar-day ${key === DISPLAY_DATE ? "today" : ""} ${key === selectedDate ? "selected" : ""} ${planned ? "has-planned" : ""}`} key={day} onClick={() => setSelectedDate(key)} aria-label={`${titleCaseDate(key)}, ${formatINR(actualTotal)} spent${dayRecords.length ? `, ${dayRecords.length} entries` : ", no entries"}`}><span>{day}</span><span className="day-summary"><strong className={actualTotal > 0 ? "" : "zero"} title={`${formatINR(actualTotal)} spent`}>{formatCalendarAmount(actualTotal)}</strong>{planned > 0 && <small><ClockCountdown size={12} /> {planned} planned</small>}</span></button>; })}</div>
       </section>
 
       <section className="module-card day-ledger" aria-live="polite">

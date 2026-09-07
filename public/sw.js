@@ -1,13 +1,14 @@
-const CACHE_NAME = "nasaq-ledger-shell-v11";
+const CACHE_NAME = "nasaq-ledger-shell-v12";
 const scopedPath = (path = "") => new URL(path, self.registration.scope).pathname;
 const APP_SHELL = [
   scopedPath(),
   scopedPath("index.html"),
   scopedPath("manifest.webmanifest"),
-  scopedPath("icons/icon-192.png"),
-  scopedPath("icons/icon-512.png"),
-  scopedPath("icons/maskable-512.png"),
-  scopedPath("icons/apple-touch-icon.png")
+  scopedPath("icons/nasaq-icon.svg"),
+  scopedPath("icons/nasaq-icon-192-v1.png"),
+  scopedPath("icons/nasaq-icon-512-v1.png"),
+  scopedPath("icons/nasaq-maskable-512-v1.png"),
+  scopedPath("icons/nasaq-apple-touch-icon-v1.png")
 ];
 
 self.addEventListener("install", (event) => {

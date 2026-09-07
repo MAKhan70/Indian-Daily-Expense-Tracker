@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const appSource = await readFile(new URL("../src/App.jsx", import.meta.url), "utf8");
+const ledgerSource = await readFile(new URL("../src/LedgerView.jsx", import.meta.url), "utf8");
 const styles = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
 
 test("dashboard keeps month navigation inside the budget tile and spending mix beside it", () => {
@@ -126,6 +127,15 @@ test("transactions show dates below amounts and edits use a confirmation popup",
   assert.match(drawer, /Delete and archive/);
   assert.doesNotMatch(drawer, /Before saving, acknowledge all 3 notices/);
   assert.doesNotMatch(drawer, /edit-notice-/);
+});
+
+test("every Ledger calendar date exposes its actual spent total on mobile and desktop", () => {
+  assert.match(ledgerSource, /function formatCalendarAmount/);
+  assert.match(ledgerSource, /record\.status !== "planned"/);
+  assert.match(ledgerSource, /className=\{actualTotal > 0 \? "" : "zero"\}/);
+  assert.match(ledgerSource, /\$\{formatINR\(actualTotal\)\} spent/);
+  assert.doesNotMatch(styles, /\.calendar-day strong \{ display: none; \}/);
+  assert.match(styles, /\.calendar-day strong \{ display: block; font-size: clamp/);
 });
 
 test("monthly grocery list is standalone, month-aware and analytically visible", () => {
