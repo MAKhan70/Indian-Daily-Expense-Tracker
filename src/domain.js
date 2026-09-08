@@ -268,8 +268,8 @@ export const titleCaseDate = (date) =>
     weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Kolkata",
   }).format(new Date(`${date}T12:00:00+05:30`));
 
-export const isAdvancePayment = (payment) => String(payment).startsWith("advance-");
-export const isCreditBorrow = (payment) => String(payment).startsWith("credit-");
+export const isAdvancePayment = (payment) => /^advance-[1-5]$/.test(String(payment));
+export const isCreditBorrow = (payment) => /^credit-[1-5]$/.test(String(payment));
 export const isBudgetExpense = (expense) => !isAdvancePayment(expense.payment) && !isCreditBorrow(expense.payment);
 export const isDisplayMonth = (expense) => String(expense.date).startsWith(DISPLAY_MONTH);
 export const isPlannedExpense = (expense) => expense.status === "planned";
@@ -404,6 +404,7 @@ export function loadState() {
     return {
       expenses: parsed.expenses.map((expense) => normalizeExpense(expense, parsed.categoryConfig)),
       archivedExpenses: Array.isArray(parsed.archivedExpenses) ? parsed.archivedExpenses : [],
+      displayTranslations: parsed.displayTranslations && typeof parsed.displayTranslations === 'object' ? parsed.displayTranslations : {},
       advanceAccounts: Array.isArray(parsed.advanceAccounts) ? parsed.advanceAccounts : DEFAULT_ADVANCES,
       creditAccounts: Array.isArray(parsed.creditAccounts) ? parsed.creditAccounts : DEFAULT_CREDITS,
       monthlyBudget,
@@ -420,6 +421,7 @@ export function loadState() {
       },
       categoryConfig: parsed.categoryConfig && typeof parsed.categoryConfig === "object" ? parsed.categoryConfig : {},
       analyticsModules: {
+        ...Object.fromEntries([['pie', ['payment', 'category', 'frequency', 'budget']], ['bar', ['category', 'payment', 'frequency', 'day']], ['trend', ['daily', 'cumulative', 'budget', 'payment']]].flatMap(([type, allowed]) => { const values = parsed.analyticsModules?.[type + 'Parameters']; return Array.isArray(values) && values.some((value) => allowed.includes(value)) ? [[type + 'Parameters', [...new Set(values.filter((value) => allowed.includes(value)))]]] : []; })),
         pie: parsed.analyticsModules?.pie !== false,
         bar: parsed.analyticsModules?.bar !== false,
         trend: parsed.analyticsModules?.trend !== false,

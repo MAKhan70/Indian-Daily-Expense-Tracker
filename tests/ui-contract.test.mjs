@@ -24,12 +24,13 @@ test("mobile navigation is a top-left drawer rather than a centered sheet", () =
   assert.doesNotMatch(mobileNav, /mobile-add|Add expense/);
 });
 
-test("NASAQ identity switches from concept A to B on menu interaction", () => {
+test("NASAQ identity toggles persistently on each logo click", () => {
   assert.match(appSource, /function AnimatedBrandMark/);
   assert.match(appSource, /className="nasaq-logo-a"/);
   assert.match(appSource, /className="nasaq-logo-b"/);
-  assert.match(appSource, /const \[brandPulse, setBrandPulse\] = useState\(0\)/);
-  assert.match(appSource, /onToggleMenu=\{\(\) => \{ animateBrand\(\); setMobileMenu\(true\); \}\}/);
+  assert.match(appSource, /const \[showB, setShowB\] = useState\(false\)/);
+  assert.match(appSource, /setShowB\(\(value\) => !value\)/);
+  assert.match(appSource, /aria-pressed=\{showB\}/);
   assert.match(styles, /@keyframes nasaq-a-to-b/);
   assert.match(styles, /@keyframes nasaq-b-reveal/);
   assert.match(styles, /prefers-reduced-motion: reduce/);
@@ -83,7 +84,8 @@ test("category studio supports custom, enabled and ordered categories across fre
   assert.match(categories, /aria-label={`Move \$\{group\.name\} up`}/);
   assert.match(categories, /aria-pressed={group\.enabled}/);
   assert.match(categories, /past transactions/);
-  assert.match(categories, /className="custom-badge">Custom/);
+  assert.match(categories, /className="custom-badge" title="User-added entry"/);
+  assert.doesNotMatch(categories, /className="custom-badge">Custom/);
   assert.match(categories, /Edit category name/);
   assert.match(categories, /Delete custom item/);
   const drawer = appSource.slice(appSource.indexOf("function AddExpenseDrawer"), appSource.indexOf("export default function App"));
@@ -98,9 +100,10 @@ test("analytics exposes selectable chart modules and private AI analysis", () =>
   assert.match(reports, /modules\.trend/);
   assert.match(reports, />AI Analysis</);
   assert.match(reports, /nothing is sent outside NASAQ Ledger/);
-  assert.match(reports, /id="pie-parameter"/);
-  assert.match(reports, /id="bar-parameter"/);
-  assert.match(reports, /id="trend-parameter"/);
+  assert.match(reports, /pieParameters/);
+  assert.match(reports, /barParameters/);
+  assert.match(reports, /trendParameters/);
+  assert.match(reports, /type="checkbox" checked=\{selected.includes\(value\)\}/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(styles, /\.skip-link:focus/);
 });
@@ -144,7 +147,7 @@ test("monthly grocery list is standalone, month-aware and analytically visible",
   assert.match(grocery, /Add a grocery item/);
   assert.match(grocery, /grocery-quantity/);
   assert.match(grocery, /grocery-unit-price/);
-  assert.match(grocery, /Custom segregation/);
+  assert.match(grocery, /Add segregation/);
   assert.match(grocery, /Included this month/);
   assert.match(grocery, /Skipped this month/);
   assert.match(grocery, /Copy \{monthLabel\(previousMonth\)\}/);

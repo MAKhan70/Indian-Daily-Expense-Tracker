@@ -78,6 +78,7 @@ const groceryItemSchema = z.object({
 });
 
 export const stateSchema = z.object({
+  displayTranslations: z.partialRecord(z.enum(["en", "as", "bn", "brx", "doi", "gu", "hi", "kn", "ks", "kok", "mai", "ml", "mni", "mr", "ne", "or", "pa", "sa", "sat", "sd", "ta", "te", "ur"]), z.array(z.object({ source: shortText(300).min(1), translation: shortText(600).min(1) })).max(500)).default({}),
   expenses: z.array(expenseSchema).max(25_000),
   archivedExpenses: z.array(archiveSchema).max(50_000).default([]),
   advanceAccounts: z.array(advanceAccountSchema).length(5),
@@ -93,6 +94,9 @@ export const stateSchema = z.object({
   }).default({ mode: "light", palette: "calm-indigo", look: "soft" }),
   categoryConfig: categoryConfigSchema.default({}),
   analyticsModules: z.object({
+    pieParameters: z.array(z.enum(["payment", "category", "frequency", "budget"])).min(1).max(4).optional(),
+    barParameters: z.array(z.enum(["category", "payment", "frequency", "day"])).min(1).max(4).optional(),
+    trendParameters: z.array(z.enum(["daily", "cumulative", "budget", "payment"])).min(1).max(4).optional(),
     pie: z.boolean(),
     bar: z.boolean(),
     trend: z.boolean(),

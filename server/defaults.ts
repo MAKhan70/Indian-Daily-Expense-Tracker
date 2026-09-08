@@ -25,6 +25,7 @@ export const emptyLedgerState = () => {
   return {
     expenses: [],
     archivedExpenses: [],
+    displayTranslations: {},
     advanceAccounts: DEFAULT_ADVANCE_ACCOUNTS,
     creditAccounts: DEFAULT_CREDIT_ACCOUNTS,
     monthlyBudget: 50000,

@@ -186,6 +186,7 @@ model GroceryItem {
 }
 
 model UserPreference {
+  displayTranslationsJson String @default("{}")
   userId               String   @id
   dark                 Boolean  @default(false)
   themeMode            String   @default("light")

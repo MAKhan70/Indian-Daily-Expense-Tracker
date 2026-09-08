@@ -40,6 +40,7 @@ export async function readLedgerState(userId: string) {
       look: (["soft", "crisp"].includes(preference?.look || "") ? preference?.look : "soft") as "soft" | "crisp",
     },
     categoryConfig: parseJson(preference?.categoryConfigJson, {}),
+    displayTranslations: parseJson(preference?.displayTranslationsJson, {}),
     analyticsModules: parseJson(preference?.analyticsModulesJson, { pie: true, bar: true, trend: true, pieParameter: "payment", barParameter: "category", trendParameter: "daily" }),
     groceryItems: groceryItems.map(({ unitPriceMinor, createdAt: _c, updatedAt: _u, userId: _uid, ...item }) => ({ ...item, unitPrice: unitPriceMinor === null ? null : fromMinor(unitPriceMinor) })),
     profilePhoto: preference?.profilePhoto ?? "",
@@ -65,8 +66,8 @@ export async function replaceLedgerState(userId: string, state: LedgerStateInput
     if (state.groceryItems.length) await tx.groceryItem.createMany({ data: state.groceryItems.map(({ id, unitPrice, ...item }) => ({ ...item, id: scopedRecordId(userId, id), unitPriceMinor: unitPrice === null ? null : toMinor(unitPrice), userId })) });
     await tx.userPreference.upsert({
       where: { userId },
-      create: { userId, dark: state.dark, themeMode: state.appearance.mode, palette: state.appearance.palette, look: state.appearance.look, categoryConfigJson: JSON.stringify(state.categoryConfig), analyticsModulesJson: JSON.stringify(state.analyticsModules), profilePhoto: state.profilePhoto || null, languageCode: state.language, localImportCompleted },
-      update: { dark: state.dark, themeMode: state.appearance.mode, palette: state.appearance.palette, look: state.appearance.look, categoryConfigJson: JSON.stringify(state.categoryConfig), analyticsModulesJson: JSON.stringify(state.analyticsModules), profilePhoto: state.profilePhoto || null, languageCode: state.language, localImportCompleted },
+      create: { userId, dark: state.dark, themeMode: state.appearance.mode, palette: state.appearance.palette, look: state.appearance.look, categoryConfigJson: JSON.stringify(state.categoryConfig), displayTranslationsJson: JSON.stringify(state.displayTranslations), analyticsModulesJson: JSON.stringify(state.analyticsModules), profilePhoto: state.profilePhoto || null, languageCode: state.language, localImportCompleted },
+      update: { dark: state.dark, themeMode: state.appearance.mode, palette: state.appearance.palette, look: state.appearance.look, categoryConfigJson: JSON.stringify(state.categoryConfig), displayTranslationsJson: JSON.stringify(state.displayTranslations), analyticsModulesJson: JSON.stringify(state.analyticsModules), profilePhoto: state.profilePhoto || null, languageCode: state.language, localImportCompleted },
     });
   });
   return readLedgerState(userId);

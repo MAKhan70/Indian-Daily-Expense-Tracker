@@ -144,6 +144,7 @@ export function textDirection(code = "en") {
   return RTL_LANGUAGE_CODES.has(languageDetails(code).code) ? "rtl" : "ltr";
 }
 
+const CASE_INSENSITIVE_PACKS = new Map();
 export function uiText(code = "en", english = "") {
   if (typeof english !== "string") return english;
   const brandedEnglish = english.replaceAll("Pocket Ledger", "NASAQ Ledger");
@@ -165,18 +166,35 @@ export function uiText(code = "en", english = "") {
     const localizedBrand = GENERATED_UI_TRANSLATIONS[resolved]["NASAQ Ledger"];
     return trimmed.includes("NASAQ Ledger") && localizedBrand ? translated.replaceAll(localizedBrand, "NASAQ Ledger") : translated;
   }
-  return brandedEnglish;
+  if (!CASE_INSENSITIVE_PACKS.has(resolved)) {
+    const entries = Object.entries(GENERATED_UI_TRANSLATIONS[resolved] || {});
+    CASE_INSENSITIVE_PACKS.set(resolved, new Map(entries.map(([key, value]) => [key.toLocaleLowerCase('en').replace(/\s+/g, ' ').trim(), value])));
+  }
+  return CASE_INSENSITIVE_PACKS.get(resolved).get(trimmed.toLocaleLowerCase('en').replace(/\s+/g, ' ')) || brandedEnglish;
 }
 
-export function translateDisplayText(code = "en", source = "") {
+export function translateDisplayText(code = "en", source = "", corrections = {}) {
   const resolved = languageDetails(code).code;
   if (typeof source !== "string") return source;
+  if (source.endsWith(' 🟪')) return translateDisplayText(code, source.slice(0, -3), corrections) + ' 🟪';
+  const correction = corrections[resolved]?.find((entry) => entry.source === source.trim());
+  if (correction) return source.replace(source.trim(), correction.translation);
   if (resolved === "en") return source.replaceAll("Pocket Ledger", "NASAQ Ledger");
   const exact = uiText(resolved, source);
-  if (exact !== source) return exact;
   const leading = source.match(/^\s*/)?.[0] || "";
   const trailing = source.match(/\s*$/)?.[0] || "";
+  if (exact !== source) return `${leading}${exact.trim()}${trailing}`;
   const body = source.slice(leading.length, source.length - trailing.length);
+  // Compose known display fragments without guessing translations for private names.
+  const greeting = body.match(/^(Good morning|Good afternoon|Good evening),\s+(.+)$/i);
+  if (greeting) return `${leading}${uiText(resolved, greeting[1])}, ${translateDisplayText(resolved, greeting[2], corrections)}${trailing}`;
+  const numbered = body.match(/^(Advance Payment|Credit Borrow|Son|Daughter|Day)\s+(\d+)$/i);
+  if (numbered) return `${leading}${uiText(resolved, numbered[1])} ${formatLocalizedNumber(numbered[2], resolved)}${trailing}`;
+  const abbreviatedDate = body.match(/^(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})$/);
+  if (abbreviatedDate) {
+    const month = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(abbreviatedDate[2]);
+    return `${leading}${new Intl.DateTimeFormat(languageDetails(resolved).locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(Number(abbreviatedDate[3]), month, Number(abbreviatedDate[1]))))}${trailing}`;
+  }
   const longDate = body.match(/^(?:(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday),\s+)?(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})(.*)$/);
   if (longDate) {
     const monthIndex = ["January","February","March","April","May","June","July","August","September","October","November","December"].indexOf(longDate[3]);
@@ -195,7 +213,9 @@ export function translateDisplayText(code = "en", source = "") {
   let changed = false;
   const translated = parts.map((part) => {
     if (/^[\s·:|—]+$/.test(part)) return part;
-    const value = localizeMonth(uiText(resolved, part.trim()));
+    const fragment = part.trim();
+    const correction = corrections[resolved]?.find((entry) => entry.source === fragment);
+    const value = localizeMonth(correction ? correction.translation : parts.length > 1 ? translateDisplayText(resolved, fragment, corrections) : uiText(resolved, fragment));
     if (value !== part.trim()) changed = true;
     return part.replace(part.trim(), value);
   }).join("");

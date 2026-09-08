@@ -1,0 +1,50 @@
+.budget-progress-head { display: grid; grid-template-columns: minmax(0, 1fr) max-content; gap: 20px; align-items: center; }
+.budget-progress-head > strong { white-space: nowrap; word-break: normal; overflow-wrap: normal; min-width: max-content; font-size: clamp(24px, 6vw, 34px); }
+.budget-progress-head > div { min-width: 0; }
+.budget-ledger-strip > button { min-width: 0; display: flex; align-items: center; gap: 9px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); color: var(--text); text-align: start; }
+.budget-kpis > button { display: grid; gap: 8px; background: var(--surface-soft); color: var(--text); border: 1px solid var(--line); border-radius: 12px; padding: 15px; text-align: start; }
+.budget-kpis > button strong { font-size: 24px; }
+button.special-usage { color: var(--text); text-align: start; }
+button.budget-primary { text-align: start; background: transparent; color: inherit; border: 0; padding: 0; }
+.budget-ledger-strip > button:hover, button.special-usage:hover, .budget-kpis > button:hover { outline: 2px solid var(--plum); outline-offset: 2px; }
+.custom-badge, :root[data-theme="dark"] .custom-badge { display: inline-block; width: 7px; height: 7px; min-height: 7px; flex: 0 0 7px; padding: 0; border-radius: 1px; background: #9854d8; vertical-align: middle; }
+.logo-switch { display: inline-flex; padding: 8px; margin: -8px; min-width: 44px; min-height: 44px; border: 0; background: transparent; border-radius: 12px; flex-shrink: 0; }
+.logo-switch .nasaq-logo-a, .logo-switch .nasaq-logo-b { transition: opacity 220ms ease, transform 220ms ease; }
+.logo-switch.show-b .nasaq-logo-a { opacity: 0; transform: scale(.85); }
+.logo-switch.show-b .nasaq-logo-b { opacity: 1; transform: scale(1); }
+.logo-switch { align-items: center; gap: 10px; text-align: start; color: var(--text); }
+.logo-wordmark { display: grid; gap: 3px; }
+.logo-wordmark small { font-size: 10px; color: var(--muted); }
+.transaction-name .custom-badge { margin-inline-start: 5px; }
+.payment-filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin: 24px 0; }
+.payment-filter-grid label { display: grid; gap: 8px; min-width: 0; }
+.payment-filter-grid input, .payment-filter-grid select { width: 100%; min-width: 0; min-height: 44px; border: 1px solid var(--line); border-radius: 10px; padding: 10px; background: var(--surface); color: var(--text); }
+.payment-month { display: flex; gap: 5px; }
+.payment-month button { min-width: 34px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); color: var(--text); }
+.payment-overview { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 16px; }
+.payment-overview button { display: grid; gap: 4px; text-align: start; padding: 12px; background: var(--surface-soft); color: var(--text); border: 1px solid var(--line); border-radius: 12px; }
+.payment-groups { display: grid; gap: 16px; margin-top: 20px; }
+.payment-groups details { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.payment-groups summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; background: var(--surface-soft); cursor: pointer; }
+.payment-groups summary > span, .payment-detail > span { display: grid; gap: 5px; min-width: 0; }
+.payment-groups summary small, .payment-detail small { color: var(--muted); font-size: 12px; }
+.payment-groups summary > b, .payment-detail b { white-space: nowrap; }
+.payment-detail { display: flex; justify-content: space-between; gap: 12px; width: 100%; text-align: start; padding: 14px 16px; background: var(--surface); color: var(--text); border: 0; border-top: 1px solid var(--line); }
+.payment-detail > span:last-child { text-align: end; }
+.translation-corrections > div { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.translation-corrections > div > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.chart-multi-select { min-width: 0; border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin: 0; }
+.chart-multi-select legend { padding: 0 6px; font-weight: 600; }
+.chart-parameter-grid .chart-multi-select label { display: flex; gap: 10px; align-items: center; min-height: 44px; cursor: pointer; }
+.chart-multi-select input[type="checkbox"] { width: 18px; height: 18px; min-height: 18px; flex: 0 0 18px; accent-color: #77518c; }
+.chart-parameter-grid > p { grid-column: 1 / -1; }
+@supports not (accent-color: #77518c) {
+  .chart-multi-select label { position: relative; }
+  .chart-multi-select input[type="checkbox"] { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); }
+  .chart-multi-select input + span { padding-inline-start: 28px; }
+  .chart-multi-select input + span::before { content: ''; position: absolute; inset-inline-start: 0; width: 18px; height: 18px; border: 1px solid #77518c; border-radius: 3px; }
+  .chart-multi-select input:checked + span::before { content: '✓'; background: #77518c; color: white; text-align: center; }
+  .chart-multi-select input:focus-visible + span::before { outline: 2px solid var(--text); outline-offset: 3px; }
+}
+@media (max-width: 480px) { .payment-filter-grid { grid-template-columns: minmax(0,1fr); } .payment-transactions .section-heading { flex-wrap: wrap; } .budget-progress-head { gap: 12px; } .payment-groups summary, .payment-detail { padding: 12px; } }
+@media (prefers-reduced-motion: reduce) { .logo-switch .nasaq-logo-a, .logo-switch .nasaq-logo-b { transition: none; } }
