@@ -6,9 +6,25 @@
 .budget-mini-stats > .budget-trend-link { flex: 1.4; }
 .budget-hero-card .budget-mini-stats { display: flex; }
 .budget-ring small { font-size: 10px; }
+.budget-ring-group { justify-self: end; min-width: 0; width: 184px; text-align: center; }
+.ring-readout { min-height: 44px; display: grid; align-content: center; gap: 3px; overflow-wrap: anywhere; }
+.ring-readout small { color: var(--muted); font-size: 11px; }
+.ring-readout strong { font-size: 14px; }
+.ring-analytics-link { min-height: 44px; font-size: 12px; }
+.mini-trend-tile { flex: 1.4; min-width: 0; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
+.mini-trend-tile .budget-trend-link { min-height: 36px; padding: 0; border: 0; background: transparent; color: var(--muted); font-size: 11px; text-align: start; }
+.mini-trend-plot { position: relative; height: 48px; direction: ltr; }
+.mini-trend-plot svg { width: 100%; height: 100%; overflow: visible; }
+.mini-trend-selector { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; touch-action: pan-y; }
+.mini-trend-plot:focus-within { outline: 2px solid var(--plum); outline-offset: 3px; border-radius: 4px; }
+.mini-trend-readout { min-height: 38px; display: grid; gap: 3px; align-content: center; }
+.mini-trend-readout small { color: var(--muted); font-size: 10px; }
+.mini-trend-readout strong { font-size: 13px; overflow-wrap: anywhere; }
+@media (max-width: 760px) { .budget-ring-group { width: 112px; grid-column: 2; grid-row: 1; } }
 @media (max-width: 760px) {
   .budget-hero-card .budget-primary { display: contents; }
   .budget-main-link { grid-column: 1; grid-row: 1; }
+  .budget-main-link > strong { font-size: clamp(1.5rem, 6vw, 2.4rem); }
   .budget-hero-card .budget-ring { grid-column: 2; grid-row: 1; }
   .budget-hero-card .budget-mini-stats { grid-column: 1 / -1; grid-row: 2; margin-top: 0; }
 }

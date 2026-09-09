@@ -20,6 +20,7 @@ import {
   GROCERY_GROUPS, GROCERY_UNITS, indiaDateKey, indiaGreeting, isDisplayMonth, ledgerUsageForMonth, loadState, managedCategoryGroups, monthLabel, newId, PAYMENT_GROUPS, QUICK_AMOUNTS, restoreCategoryOrder, shiftMonthKey, STORAGE_KEY, titleCaseDate,
   upsertExpenseWithArchive, withBudgetForMonth,
 } from "./domain.js";
+import { MiniSpendingTrend, BudgetUsageRing } from "./BudgetChartInspectors.jsx";
 import { ChartControls } from "./ChartControls.jsx";
 import { CHART_COLORS, pieSegments } from "./chart-data.js";
 import { groceryTotal, groceryMoney } from "./grocery-pricing.js";
@@ -173,12 +174,9 @@ function BudgetHero({ onAnalytics, analyticsModules, aliases, onDrilldown, expen
     <div className="budget-hero-head"><div><span className="eyebrow">Monthly budget</span><h2 id="safe-title">{monthLabel(selectedMonth)}</h2></div><MonthNavigator value={selectedMonth} onChange={onMonthChange} label="Dashboard budget month" /></div>
     <div className="budget-hero-body">
       <div className="budget-primary"><button type="button" className="budget-main-link" onClick={() => onDrilldown("budget", selectedMonth)}><span>Available to spend</span><strong>{formatINR(remaining)}</strong><small>{Math.round(used)}% used · {formatINR(selectedBudget)} total budget</small></button>
-        <div className="budget-mini-stats"><button type="button" onClick={() => onDrilldown("budget", selectedMonth)}><small>Spent</small><b>{formatINR(spent)}</b></button><button type="button" className="budget-trend-link" onClick={() => onAnalytics("trend", selectedMonth)} aria-label="View spending trend in Analytics"><small>Daily spending trend ↗</small><div aria-hidden="true"><ResponsiveContainer width="100%" height={44}><LineChart data={spark}><Line type="monotone" dataKey="amount" stroke="var(--sage)" strokeWidth={2} dot={false} isAnimationActive={false} /></LineChart></ResponsiveContainer></div></button></div>
+        <div className="budget-mini-stats"><button type="button" onClick={() => onDrilldown("budget", selectedMonth)}><small>Spent</small><b>{formatINR(spent)}</b></button><MiniSpendingTrend key={selectedMonth} data={spark} month={selectedMonth} onOpen={() => onAnalytics("trend", selectedMonth)} /></div>
       </div>
-      <button type="button" className="budget-ring" onClick={() => onAnalytics("pie", selectedMonth)} aria-label={`View Pie chart in Analytics, ${Math.round(used)} percent of monthly budget used`}>
-        <div className="budget-ring-chart" aria-hidden="true"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={[{ value: 1 }]} dataKey="value" innerRadius="76%" outerRadius="96%" fill="var(--track)" stroke="none" isAnimationActive={false} /><Pie data={chart} dataKey="value" nameKey="name" innerRadius="76%" outerRadius="96%" startAngle={90} endAngle={90 - 360 * Math.min(used, 100) / 100} stroke="none" isAnimationActive={false}>{chart.map((row) => <Cell key={row.name} fill={row.fill} />)}</Pie></PieChart></ResponsiveContainer></div>
-        <span><b>{selectedBudget ? Math.round(used) + "%" : "—"}</b><small>{selectedBudget ? "budget used" : "No budget"}</small></span>
-      </button>
+      <BudgetUsageRing key={selectedMonth} data={chart} used={used} budget={selectedBudget} spent={spent} onOpen={() => onAnalytics("pie", selectedMonth)} />
     </div>
     <small className="budget-ring-note">Ring colours follow the Pie chart spending mix; the percentage excludes Advance and Credit Borrow.</small>
     <div className="budget-ledger-strip"><button type="button" onClick={() => onDrilldown("advance", selectedMonth)}><HandCoins size={18} /><span>Advance usage<b>{formatINR(advanceUsage.used)} used</b><small>{formatINR(advanceUsage.defined)} advance defined</small><strong>{formatINR(Math.max(advanceUsage.defined - advanceUsage.used, 0))} remaining</strong></span></button><button type="button" onClick={() => onDrilldown("credit", selectedMonth)}><CreditCard size={18} /><span>Credit usage<b>{formatINR(creditUsage.used)} used</b><small>{formatINR(creditUsage.defined)} credit limit defined</small><strong>{formatINR(Math.max(creditUsage.defined - creditUsage.used, 0))} available</strong></span></button></div>
