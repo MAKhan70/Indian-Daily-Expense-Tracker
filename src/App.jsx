@@ -134,7 +134,7 @@ function Sidebar({ active, onNavigate, dark, onToggleDark, budgetSpent, monthlyB
 }
 
 function MobileNav({ active, onNavigate, language }) {
-  const items = NAV_ITEMS.slice(0, 4);
+  const items = NAV_ITEMS.slice(0, 5);
   return <nav className="mobile-nav" aria-label="Mobile navigation">{items.map((item) => { const Icon = item.icon; return <button key={item.id} className={active === item.id ? "active" : ""} onClick={() => onNavigate(item.id)}><Icon size={21} weight={active === item.id ? "fill" : "regular"} /><span>{navItemLabel(item, language).replace(" & Ledgers", "")}</span></button>; })}</nav>;
 }
 
@@ -173,10 +173,10 @@ function BudgetHero({ onAnalytics, analyticsModules, aliases, onDrilldown, expen
   return <section className="budget-hero-card" aria-labelledby="safe-title">
     <div className="budget-hero-head"><div><span className="eyebrow">Monthly budget</span><h2 id="safe-title">{monthLabel(selectedMonth)}</h2></div><MonthNavigator value={selectedMonth} onChange={onMonthChange} label="Dashboard budget month" /></div>
     <div className="budget-hero-body">
-      <div className="budget-primary"><button type="button" className="budget-main-link" onClick={() => onDrilldown("budget", selectedMonth)}><span>Available to spend</span><strong>{formatINR(remaining)}</strong><small>{Math.round(used)}% used · {formatINR(selectedBudget)} total budget</small></button>
-        <div className="budget-mini-stats"><button type="button" onClick={() => onDrilldown("budget", selectedMonth)}><small>Spent</small><b>{formatINR(spent)}</b></button><MiniSpendingTrend key={selectedMonth} data={spark} month={selectedMonth} onOpen={() => onAnalytics("trend", selectedMonth)} /></div>
-      </div>
+      <div className="budget-summary-panel"><button type="button" className="budget-main-link" onClick={() => onDrilldown("budget", selectedMonth)}><span>Available to spend</span><strong>{formatINR(remaining)}</strong><small>{Math.round(used)}% used · {formatINR(selectedBudget)} total budget</small></button>
       <BudgetUsageRing key={selectedMonth} data={chart} used={used} budget={selectedBudget} spent={spent} onOpen={() => onAnalytics("pie", selectedMonth)} />
+      </div>
+      <div className="budget-mini-stats"><button type="button" onClick={() => onDrilldown("budget", selectedMonth)}><small>Spent</small><b>{formatINR(spent)}</b></button><MiniSpendingTrend key={selectedMonth} data={spark} month={selectedMonth} onOpen={() => onAnalytics("trend", selectedMonth)} /></div>
     </div>
     <small className="budget-ring-note">Ring colours follow the Pie chart spending mix; the percentage excludes Advance and Credit Borrow.</small>
     <div className="budget-ledger-strip"><button type="button" onClick={() => onDrilldown("advance", selectedMonth)}><HandCoins size={18} /><span>Advance usage<b>{formatINR(advanceUsage.used)} used</b><small>{formatINR(advanceUsage.defined)} advance defined</small><strong>{formatINR(Math.max(advanceUsage.defined - advanceUsage.used, 0))} remaining</strong></span></button><button type="button" onClick={() => onDrilldown("credit", selectedMonth)}><CreditCard size={18} /><span>Credit usage<b>{formatINR(creditUsage.used)} used</b><small>{formatINR(creditUsage.defined)} credit limit defined</small><strong>{formatINR(Math.max(creditUsage.defined - creditUsage.used, 0))} available</strong></span></button></div>

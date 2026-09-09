@@ -1,4 +1,4 @@
-const CACHE_NAME = "nasaq-ledger-shell-v15";
+const CACHE_NAME = "nasaq-ledger-shell-v16";
 const scopedPath = (path = "") => new URL(path, self.registration.scope).pathname;
 const APP_SHELL = [
   scopedPath(),

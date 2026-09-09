@@ -42,7 +42,7 @@ test("links the manifest and registers an offline application shell", async () =
   assert.match(html, /viewport-fit=cover/);
   assert.match(main, /serviceWorker\.register\(new URL\("sw\.js", document\.baseURI\), \{ updateViaCache: "none" \}\)/);
   assert.match(html, /nasaq-apple-touch-icon-v1\.png/);
-  assert.match(serviceWorker, /nasaq-ledger-shell-v15/);
+  assert.match(serviceWorker, /nasaq-ledger-shell-v16/);
   assert.match(serviceWorker, /nasaq-icon-512-v1\.png/);
   assert.match(serviceWorker, /manifest\.webmanifest/);
   assert.match(serviceWorker, /cache: "no-store"/);

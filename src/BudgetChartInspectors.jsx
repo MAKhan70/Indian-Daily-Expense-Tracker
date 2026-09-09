@@ -47,6 +47,7 @@ export function BudgetUsageRing({ data, used, budget, spent, onOpen }) {
     setSegment(data.findIndex((item) => { cumulative += item.value; return angle / arc <= cumulative / total; }));
   };
   return <div className="budget-ring-group">
+    <div className="budget-ring-stage">
     <button type="button" className="budget-ring" aria-label="Inspect monthly budget spending" aria-describedby="budget-ring-readout" onPointerEnter={inspect} onPointerMove={inspect} onPointerDown={inspect} onClick={() => setInspecting(true)} onFocus={() => setInspecting(true)} onKeyDown={(event) => {
       if (!['ArrowLeft', 'ArrowRight', 'Home', 'Escape'].includes(event.key)) return;
       event.preventDefault(); setInspecting(true);
@@ -54,9 +55,9 @@ export function BudgetUsageRing({ data, used, budget, spent, onOpen }) {
       else setSegment((current) => { const next = (current ?? -1) + (event.key === 'ArrowRight' ? 1 : -1); return next < 0 || next >= data.length ? null : next; });
     }}>
       <div className="budget-ring-chart" aria-hidden="true"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={[{ value: 1 }]} dataKey="value" innerRadius="76%" outerRadius="96%" fill="var(--track)" stroke="none" isAnimationActive={false} /><Pie data={data} dataKey="value" innerRadius="76%" outerRadius="96%" startAngle={90} endAngle={90 - 360 * Math.min(used, 100) / 100} stroke="none" isAnimationActive={false}>{data.map((item, i) => <Cell key={i} fill={item.fill} />)}</Pie></PieChart></ResponsiveContainer></div>
-      <span><b>{budget ? Math.round(used) + '%' : '—'}</b><small>{budget ? 'budget used' : 'No budget'}</small></span>
     </button>
+    <button type="button" className="budget-ring-center" aria-label="Open Pie chart analytics" onClick={onOpen} onPointerEnter={() => { setInspecting(true); setSegment(null); }}><b>{budget ? Math.round(used) + '%' : '—'}</b><small>{budget ? 'budget used' : 'No budget'}</small></button>
+    </div>
     <div id="budget-ring-readout" className="ring-readout" aria-live="polite">{inspecting ? <><small>{row?.name || 'Budget spent'}</small><strong>{money(row?.value ?? spent)}</strong></> : <small>Hover or tap for amounts</small>}</div>
-    <button type="button" className="text-button ring-analytics-link" onClick={onOpen}>Pie analytics ↗</button>
   </div>;
 }

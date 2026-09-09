@@ -1,4 +1,8 @@
 .budget-progress-head { display: grid; grid-template-columns: minmax(0, 1fr) max-content; gap: 20px; align-items: center; }
+.budget-hero-card .budget-hero-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.budget-summary-panel { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
+.budget-summary-panel .budget-main-link { min-width: 0; }
+.budget-hero-card .budget-mini-stats { margin-top: 0; }
 .budget-main-link { display: grid; gap: 7px; border: 0; padding: 0; background: transparent; color: inherit; text-align: start; }
 .budget-main-link > strong { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(2.7rem, 5vw, 4.7rem); line-height: 1.1; letter-spacing: -.045em; overflow-wrap: anywhere; }
 .budget-main-link > span, .budget-main-link > small { color: var(--muted); }
@@ -10,7 +14,10 @@
 .ring-readout { min-height: 44px; display: grid; align-content: center; gap: 3px; overflow-wrap: anywhere; }
 .ring-readout small { color: var(--muted); font-size: 11px; }
 .ring-readout strong { font-size: 14px; }
-.ring-analytics-link { min-height: 44px; font-size: 12px; }
+.budget-ring-stage { position: relative; width: 184px; height: 184px; }
+.budget-ring-center { position: absolute; inset: 16%; border: 0; border-radius: 50%; background: transparent; color: var(--sage); display: grid; place-content: center; gap: 2px; cursor: pointer; }
+.budget-ring-center b { font-size: 28px; }
+.budget-ring-center small { font-size: 10px; color: var(--muted); }
 .mini-trend-tile { flex: 1.4; min-width: 0; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
 .mini-trend-tile .budget-trend-link { min-height: 36px; padding: 0; border: 0; background: transparent; color: var(--muted); font-size: 11px; text-align: start; }
 .mini-trend-plot { position: relative; height: 48px; direction: ltr; }
@@ -20,7 +27,14 @@
 .mini-trend-readout { min-height: 38px; display: grid; gap: 3px; align-content: center; }
 .mini-trend-readout small { color: var(--muted); font-size: 10px; }
 .mini-trend-readout strong { font-size: 13px; overflow-wrap: anywhere; }
-@media (max-width: 760px) { .budget-ring-group { width: 112px; grid-column: 2; grid-row: 1; } }
+@media (max-width: 760px) {
+  .budget-summary-panel { padding: 10px; gap: 8px; }
+  .budget-ring-group { width: 136px; grid-column: 2; grid-row: 1; }
+  .budget-ring-stage, .budget-hero-card .budget-ring { width: 136px; height: 136px; }
+  .budget-ring-center b { font-size: 25px; }
+  .mobile-nav { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .mobile-nav button { min-width: 0; overflow-wrap: anywhere; }
+}
 @media (max-width: 760px) {
   .budget-hero-card .budget-primary { display: contents; }
   .budget-main-link { grid-column: 1; grid-row: 1; }
