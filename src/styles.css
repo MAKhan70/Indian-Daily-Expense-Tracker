@@ -876,7 +876,7 @@ body, :root[data-theme="dark"] body { background: var(--bg); }
   .page-header { min-height: 112px; }
 }
 
-.budget-hero-card { --track: var(--track); color: var(--text); background: var(--surface); }
+.budget-hero-card { --track: inherit; color: var(--text); background: var(--surface); }
 .budget-hero-head .eyebrow, .budget-ledger-strip svg { color: var(--plum); }
 .budget-hero-card .month-navigator input, .budget-hero-card .icon-button { color: var(--text); border-color: var(--line); background: var(--surface-soft); }
 .budget-hero-card .month-navigator input { color-scheme: normal; }

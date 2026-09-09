@@ -1,0 +1,1 @@
+ALTER TABLE "GroceryItem" ADD COLUMN "priceQuantity" REAL NOT NULL DEFAULT 1;

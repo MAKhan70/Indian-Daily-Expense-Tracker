@@ -166,6 +166,7 @@ model PaymentAccount {
 }
 
 model GroceryItem {
+  priceQuantity  Float @default(1)
   id             String   @id
   userId         String
   month          String

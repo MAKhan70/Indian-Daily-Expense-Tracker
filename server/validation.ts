@@ -65,6 +65,7 @@ const categoryConfigSchema = z.object({
 });
 
 const groceryItemSchema = z.object({
+  priceQuantity: z.coerce.number().positive().max(100_000).default(1),
   id: shortText(128).min(1),
   month: monthKey,
   name: shortText(120).min(1),

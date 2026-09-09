@@ -103,7 +103,8 @@ test("analytics exposes selectable chart modules and private AI analysis", () =>
   assert.match(reports, /pieParameters/);
   assert.match(reports, /barParameters/);
   assert.match(reports, /trendParameters/);
-  assert.match(reports, /type="checkbox" checked=\{selected.includes\(value\)\}/);
+  for (const type of ['pie', 'bar', 'trend']) assert.match(reports, new RegExp('id="analytics-' + type + '"[^\\n]+<ChartControls type="' + type + '"'));
+  assert.doesNotMatch(reports, /className="chart-parameter-grid"/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(styles, /\.skip-link:focus/);
 });

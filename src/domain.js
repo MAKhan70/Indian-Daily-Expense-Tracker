@@ -435,6 +435,7 @@ export function loadState() {
         name: String(item.name || "Grocery item"),
         groupName: String(item.groupName || "General Grocery"),
         quantity: Math.max(Number(item.quantity) || 1, 0.01),
+        priceQuantity: Math.min(100000, Math.max(Number(item.priceQuantity) || 1, 0.01)),
         unit: GROCERY_UNITS.includes(item.unit) ? item.unit : "item",
         unitPrice: item.unitPrice === null || item.unitPrice === "" || !Number.isFinite(Number(item.unitPrice)) ? null : Math.max(Number(item.unitPrice), 0),
         included: item.included !== false,
